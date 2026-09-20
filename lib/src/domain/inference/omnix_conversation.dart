@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import '../models/omnix_model_manifest.dart';
+import 'omnix_message.dart';
 
 /// Settings for one local multi-turn conversation.
 final class OmnixConversationConfiguration {
@@ -57,6 +58,15 @@ final class OmnixToolCall extends OmnixConversationEvent {
 
 /// A stateful local conversation owned by an inference backend.
 abstract interface class OmnixConversation {
+  /// A provider-neutral snapshot of the currently replayable history.
+  List<OmnixMessage> get history;
+
+  /// Replaces native session history with [messages].
+  ///
+  /// Durable persistence remains the responsibility of a host or storage
+  /// adapter. This method only restores the active model session.
+  Future<void> replaceHistory(List<OmnixMessage> messages);
+
   /// Adds a user turn and streams the model response.
   Stream<OmnixConversationEvent> send(String prompt);
 

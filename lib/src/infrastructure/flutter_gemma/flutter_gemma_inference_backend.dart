@@ -4,6 +4,7 @@
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../domain/inference/omnix_conversation.dart';
+import '../../domain/inference/omnix_message.dart';
 import 'flutter_gemma_model_loader.dart';
 
 /// Thin Omnix adapter over an already initialized Flutter Gemma runtime.
@@ -50,6 +51,19 @@ final class FlutterGemmaConversation implements OmnixConversation {
   InferenceChat get nativeChat => _chat;
 
   @override
+  List<OmnixMessage> get history =>
+      _chat.fullHistory.map(mapFlutterGemmaMessage).toList(growable: false);
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) {
+    if (_closed) throw StateError('Conversation is closed.');
+    if (_generating) throw StateError('Generation is already in progress.');
+    return _chat.clearHistory(
+      replayHistory: messages.map(mapOmnixMessage).toList(growable: false),
+    );
+  }
+
+  @override
   Stream<OmnixConversationEvent> send(String prompt) async* {
     if (_closed) throw StateError('Conversation is closed.');
     if (_generating) throw StateError('Generation is already in progress.');
@@ -80,6 +94,40 @@ final class FlutterGemmaConversation implements OmnixConversation {
     _closed = true;
   }
 }
+
+/// Maps one provider message into the stable Omnix history contract.
+OmnixMessage mapFlutterGemmaMessage(Message message) => OmnixMessage(
+  text: message.text,
+  role: message.isUser ? OmnixMessageRole.user : OmnixMessageRole.assistant,
+  kind: switch (message.type) {
+    MessageType.text => OmnixMessageKind.text,
+    MessageType.toolResponse => OmnixMessageKind.toolResponse,
+    MessageType.toolCall => OmnixMessageKind.toolCall,
+    MessageType.systemInfo => OmnixMessageKind.systemInfo,
+    MessageType.thinking => OmnixMessageKind.thinking,
+  },
+  toolName: message.toolName,
+  imageBytes: message.imageBytes,
+  images: message.images,
+  audioBytes: message.audioBytes,
+);
+
+/// Maps one Omnix history message into Flutter Gemma's provider value.
+Message mapOmnixMessage(OmnixMessage message) => Message(
+  text: message.text,
+  isUser: message.role == OmnixMessageRole.user,
+  type: switch (message.kind) {
+    OmnixMessageKind.text => MessageType.text,
+    OmnixMessageKind.toolResponse => MessageType.toolResponse,
+    OmnixMessageKind.toolCall => MessageType.toolCall,
+    OmnixMessageKind.systemInfo => MessageType.systemInfo,
+    OmnixMessageKind.thinking => MessageType.thinking,
+  },
+  toolName: message.toolName,
+  imageBytes: message.imageBytes,
+  images: message.images,
+  audioBytes: message.audioBytes,
+);
 
 /// Internal response mapping kept visible for adapter contract tests.
 Iterable<OmnixConversationEvent> mapFlutterGemmaResponse(

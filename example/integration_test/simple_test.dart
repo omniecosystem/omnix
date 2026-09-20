@@ -60,6 +60,15 @@ final class _IntegrationInferenceBackend implements OmnixInferenceBackend {
 final class _IntegrationConversation implements OmnixConversation {
   int stopCalls = 0;
   int closeCalls = 0;
+  List<OmnixMessage> _history = [];
+
+  @override
+  List<OmnixMessage> get history => List.unmodifiable(_history);
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) async {
+    _history = List.of(messages);
+  }
 
   @override
   Stream<OmnixConversationEvent> send(String prompt) async* {

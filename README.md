@@ -74,6 +74,9 @@ cancellation, Android foreground downloads, and lifecycle behavior.
 See [audio and speech](doc/SPEECH.md) for the distinction between direct model
 audio, speech-to-text, text-to-speech, and optional provider adapters.
 
+See [persistence boundaries](doc/PERSISTENCE.md) for the distinction between
+active session history, durable relational storage, and vector indexes.
+
 Each runtime also owns one provider-neutral capability registry:
 
 ```dart

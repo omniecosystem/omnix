@@ -8,7 +8,10 @@ import 'package:flutter_gemma_agent/flutter_gemma_agent.dart' as agent;
 
 import '../../domain/agents/omnix_agent.dart';
 import '../../domain/capabilities/omnix_capability_registry_snapshot.dart';
+import '../../domain/inference/omnix_message.dart';
 import '../flutter_gemma/flutter_gemma_model_loader.dart';
+import '../flutter_gemma/flutter_gemma_inference_backend.dart'
+    show mapFlutterGemmaMessage, mapOmnixMessage;
 import 'flutter_gemma_agent_skill_adapter.dart';
 
 /// Flutter Gemma Agent implementation of the neutral Omnix agent contract.
@@ -76,6 +79,20 @@ final class FlutterGemmaAgentSession implements OmnixAgentSession {
   ///
   /// New Omnix consumers should use [ask], [stop], and [close] instead.
   InferenceChat get nativeChat => _session.chat;
+
+  @override
+  List<OmnixMessage> get history => _session.chat.fullHistory
+      .map(mapFlutterGemmaMessage)
+      .toList(growable: false);
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) {
+    if (_closed) throw StateError('Agent session is closed.');
+    if (_running) throw StateError('An agent turn is already in progress.');
+    return _session.chat.clearHistory(
+      replayHistory: messages.map(mapOmnixMessage).toList(growable: false),
+    );
+  }
 
   @override
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) async* {

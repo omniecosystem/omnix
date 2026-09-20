@@ -233,6 +233,15 @@ final class _FakeConversation implements OmnixConversation {
   int stopCalls = 0;
   int closeCalls = 0;
   bool throwOnClose = false;
+  List<OmnixMessage> _history = [];
+
+  @override
+  List<OmnixMessage> get history => List.unmodifiable(_history);
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) async {
+    _history = List.of(messages);
+  }
 
   @override
   Stream<OmnixConversationEvent> send(String prompt) async* {
@@ -270,6 +279,15 @@ final class _FakeAgentBackend implements OmnixAgentBackend {
 final class _FakeAgentSession implements OmnixAgentSession {
   int stopCalls = 0;
   int closeCalls = 0;
+  List<OmnixMessage> _history = [];
+
+  @override
+  List<OmnixMessage> get history => List.unmodifiable(_history);
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) async {
+    _history = List.of(messages);
+  }
 
   @override
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) async* {

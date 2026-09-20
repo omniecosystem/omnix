@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../capabilities/omnix_capability_registry_snapshot.dart';
 import '../models/omnix_model_manifest.dart';
+import '../inference/omnix_message.dart';
 
 /// Settings for one local agent session.
 final class OmnixAgentConfiguration {
@@ -177,6 +178,12 @@ final class OmnixAgentFailure extends OmnixAgentEvent {
 
 /// A stateful agent session backed by one local model conversation.
 abstract interface class OmnixAgentSession {
+  /// A provider-neutral snapshot of the underlying model conversation.
+  List<OmnixMessage> get history;
+
+  /// Replaces native session history with [messages].
+  Future<void> replaceHistory(List<OmnixMessage> messages);
+
   /// Runs one user turn and streams orchestration and answer events.
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes});
 

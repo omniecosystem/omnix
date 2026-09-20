@@ -18,6 +18,7 @@ export 'src/domain/engine/omnix_engine_event.dart';
 export 'src/domain/engine/omnix_engine_state.dart';
 export 'src/domain/engine/omnix_runtime_info.dart';
 export 'src/domain/inference/omnix_conversation.dart';
+export 'src/domain/inference/omnix_message.dart';
 export 'src/domain/models/omnix_model_manifest.dart';
 export 'src/domain/models/omnix_model_manager.dart';
 export 'src/domain/scheduling/inference_scheduler_snapshot.dart';

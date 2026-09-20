@@ -7,6 +7,7 @@ import '../domain/agents/omnix_agent.dart';
 import '../domain/engine/omnix_engine.dart';
 import '../domain/engine/omnix_runtime_info.dart';
 import '../domain/inference/omnix_conversation.dart';
+import '../domain/inference/omnix_message.dart';
 import '../domain/models/omnix_model_manager.dart';
 import 'capabilities/omnix_capability_registry.dart';
 
@@ -212,6 +213,18 @@ final class _ManagedAgentSession implements OmnixAgentSession {
   bool _closed = false;
 
   @override
+  List<OmnixMessage> get history {
+    if (_closed) throw StateError('Agent session is closed.');
+    return _session.history;
+  }
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) {
+    if (_closed) throw StateError('Agent session is closed.');
+    return _session.replaceHistory(messages);
+  }
+
+  @override
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) {
     if (_closed) throw StateError('Agent session is closed.');
     return _session.ask(prompt, imageBytes: imageBytes);
@@ -241,6 +254,18 @@ final class _ManagedConversation implements OmnixConversation {
   final OmnixConversation _conversation;
   final void Function() onClosed;
   bool _closed = false;
+
+  @override
+  List<OmnixMessage> get history {
+    if (_closed) throw StateError('Conversation is closed.');
+    return _conversation.history;
+  }
+
+  @override
+  Future<void> replaceHistory(List<OmnixMessage> messages) {
+    if (_closed) throw StateError('Conversation is closed.');
+    return _conversation.replaceHistory(messages);
+  }
 
   @override
   Stream<OmnixConversationEvent> send(String prompt) {

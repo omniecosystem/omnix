@@ -4,6 +4,24 @@ import 'package:omnix/src/infrastructure/flutter_gemma/flutter_gemma_inference_b
 import 'package:test/test.dart';
 
 void main() {
+  group('Flutter Gemma message mapping', () {
+    test('round-trips replayable message content', () {
+      final providerMessage = Message(
+        text: '{"ok":true}',
+        isUser: true,
+        type: MessageType.toolResponse,
+        toolName: 'lookup',
+      );
+
+      final omnixMessage = mapFlutterGemmaMessage(providerMessage);
+      final roundTrip = mapOmnixMessage(omnixMessage);
+
+      expect(omnixMessage.role, OmnixMessageRole.user);
+      expect(omnixMessage.kind, OmnixMessageKind.toolResponse);
+      expect(roundTrip, providerMessage);
+    });
+  });
+
   group('Flutter Gemma response mapping', () {
     test('preserves text and thinking separately', () {
       final text = mapFlutterGemmaResponse(const TextResponse('hello')).single;
