@@ -14,6 +14,9 @@
   integrity contracts with a LiteRT-LM-backed Flutter Gemma implementation.
 - Add a one-call `FlutterGemmaOmnix.createRuntime()` composition and a runnable
   model-installation and streaming-conversation example.
+- Add provider-neutral skill and tool contracts, a runtime-owned shared
+  capability registry, observable enablement state, host permission policy,
+  and structured tool execution outcomes.
 - Define capability-oriented module boundaries for Core, Workflow, Knowledge,
   Nexus, skills, and tools without prematurely splitting packages.
 - Add architecture, contribution, security, and CI foundations.

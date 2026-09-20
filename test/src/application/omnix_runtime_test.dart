@@ -93,11 +93,30 @@ void main() {
       expect(runtime.supportsModelManagement, isFalse);
       expect(() => runtime.models, throwsUnsupportedError);
     });
+
+    test('owns one shared capability registry', () async {
+      runtime.capabilities.register(_tool());
+
+      expect(runtime.capabilities.find('clock'), isA<OmnixTool>());
+
+      await runtime.close();
+      expect(() => runtime.capabilities.register(_tool()), throwsStateError);
+    });
   });
 }
 
 const _configuration = OmnixConversationConfiguration(
   modelTemplate: OmnixModelTemplate.general,
+);
+
+OmnixTool _tool() => OmnixTool(
+  metadata: OmnixCapabilityMetadata(
+    id: 'clock',
+    kind: OmnixCapabilityKind.tool,
+    name: 'Clock',
+    description: 'Returns the current time.',
+  ),
+  execute: (_) => const OmnixToolSuccess('12:00'),
 );
 
 final class _FakeEngine implements OmnixEngine {

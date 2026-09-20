@@ -5,6 +5,7 @@ import '../domain/engine/omnix_engine.dart';
 import '../domain/engine/omnix_runtime_info.dart';
 import '../domain/inference/omnix_conversation.dart';
 import '../domain/models/omnix_model_manager.dart';
+import 'capabilities/omnix_capability_registry.dart';
 
 /// Application-level owner of an Omnix engine and its conversations.
 ///
@@ -16,14 +17,28 @@ final class OmnixRuntime {
     required OmnixEngine engine,
     required OmnixInferenceBackend inferenceBackend,
     OmnixModelManager? modelManager,
-  }) : this._(engine, inferenceBackend, modelManager);
+    OmnixCapabilityRegistry? capabilityRegistry,
+  }) : this._(
+         engine,
+         inferenceBackend,
+         modelManager,
+         capabilityRegistry ?? OmnixCapabilityRegistry(),
+       );
 
-  OmnixRuntime._(this._engine, this._inferenceBackend, this._modelManager);
+  OmnixRuntime._(
+    this._engine,
+    this._inferenceBackend,
+    this._modelManager,
+    this.capabilities,
+  );
 
   final OmnixEngine _engine;
   final OmnixInferenceBackend _inferenceBackend;
   final OmnixModelManager? _modelManager;
   final Set<_ManagedConversation> _conversations = {};
+
+  /// The shared capability registry used by conversations and workflows.
+  final OmnixCapabilityRegistry capabilities;
 
   Future<OmnixRuntimeInfo>? _initialization;
   Future<void>? _closeFuture;
@@ -109,6 +124,13 @@ final class OmnixRuntime {
       } catch (error, stackTrace) {
         firstError = error;
         firstStackTrace = stackTrace;
+      }
+
+      try {
+        await capabilities.close();
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
       }
 
       try {

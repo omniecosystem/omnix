@@ -71,6 +71,25 @@ try {
 See [model management](doc/MODELS.md) for sources, integrity verification,
 cancellation, Android foreground downloads, and lifecycle behavior.
 
+Each runtime also owns one provider-neutral capability registry:
+
+```dart
+runtime.capabilities.register(
+  OmnixTool(
+    metadata: OmnixCapabilityMetadata(
+      id: 'current_time',
+      kind: OmnixCapabilityKind.tool,
+      name: 'Current time',
+      description: 'Returns the device-local time.',
+    ),
+    execute: (_) => OmnixToolSuccess(DateTime.now().toIso8601String()),
+  ),
+);
+```
+
+See [skills and tools](doc/CAPABILITIES.md) for capability definitions,
+enablement, permission policy, and structured execution results.
+
 ## Development
 
 Install Flutter and Rust with `rustup`, then install the matching bridge
