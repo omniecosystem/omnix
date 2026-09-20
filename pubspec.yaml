@@ -1,0 +1,22 @@
+name: omnix
+description: "An open, headless, on-device intelligence engine for Flutter applications."
+version: 0.1.0-dev.1
+repository: https://github.com/omniecosystem/omnix
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  crypto: ^3.0.7
+  flutter_gemma: ^1.8.3
+  flutter_gemma_litertlm: ^1.6.4
+  flutter_rust_bridge: ^2.13.0
+  flutter_rust_bridge_hooks: ^2.13.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  integration_test:
+    sdk: flutter
+  test: ^1.26.0
