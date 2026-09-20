@@ -71,6 +71,9 @@ try {
 See [model management](doc/MODELS.md) for sources, integrity verification,
 cancellation, Android foreground downloads, and lifecycle behavior.
 
+See [audio and speech](doc/SPEECH.md) for the distinction between direct model
+audio, speech-to-text, text-to-speech, and optional provider adapters.
+
 Each runtime also owns one provider-neutral capability registry:
 
 ```dart

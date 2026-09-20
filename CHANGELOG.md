@@ -25,6 +25,8 @@
   outputs, runtime lifecycle ownership, and a Flutter Gemma Agent backend.
 - Add a typed, temporary native-chat bridge to support incremental migration of
   existing history and voice integrations.
+- Document the provider-neutral audio and speech boundary without making a
+  dedicated speech-model package mandatory.
 - Define capability-oriented module boundaries for Core, Workflow, Knowledge,
   Nexus, skills, and tools without prematurely splitting packages.
 - Add architecture, contribution, security, and CI foundations.
