@@ -4,4 +4,5 @@
 /// Flutter Gemma Agent infrastructure adapters for Omnix.
 library;
 
+export 'src/infrastructure/flutter_gemma_agent/flutter_gemma_agent_backend.dart';
 export 'src/infrastructure/flutter_gemma_agent/flutter_gemma_agent_skill_adapter.dart';

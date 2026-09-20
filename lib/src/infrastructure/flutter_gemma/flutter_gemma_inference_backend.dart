@@ -1,11 +1,10 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../domain/inference/omnix_conversation.dart';
-import '../../domain/models/omnix_model_manifest.dart';
+import 'flutter_gemma_model_loader.dart';
 
 /// Thin Omnix adapter over an already initialized Flutter Gemma runtime.
 ///
@@ -19,61 +18,21 @@ final class FlutterGemmaInferenceBackend implements OmnixInferenceBackend {
   Future<OmnixConversation> openConversation(
     OmnixConversationConfiguration configuration,
   ) async {
-    final model = await _getActiveModel(configuration);
+    final model = await getActiveFlutterGemmaModel(
+      maxTokens: configuration.maxTokens,
+      preferredBackend: configuration.preferredBackend,
+    );
     final chat = await model.createChat(
       temperature: configuration.temperature,
       topK: configuration.topK,
       topP: configuration.topP,
       maxOutputTokens: configuration.maxOutputTokens,
       isThinking: configuration.thinking,
-      modelType: _modelType(configuration.modelTemplate),
+      modelType: flutterGemmaModelType(configuration.modelTemplate),
       systemInstruction: configuration.systemInstruction,
     );
     return FlutterGemmaConversation(chat);
   }
-}
-
-Future<InferenceModel> _getActiveModel(
-  OmnixConversationConfiguration configuration,
-) async {
-  final attempts = <String>[];
-  for (final backend in _backendOrder(configuration.preferredBackend)) {
-    try {
-      return await FlutterGemma.getActiveModel(
-        maxTokens: configuration.maxTokens,
-        preferredBackend: backend,
-      );
-    } catch (error) {
-      attempts.add('${backend.name}: $error');
-    }
-  }
-  throw StateError(
-    'No inference backend could load the active model. '
-    'Attempts: ${attempts.join(' | ')}',
-  );
-}
-
-List<PreferredBackend> _backendOrder(OmnixBackendPreference preferred) {
-  if (kIsWeb) return const [PreferredBackend.gpu];
-  final candidates = switch (preferred) {
-    OmnixBackendPreference.cpu => const [
-      PreferredBackend.cpu,
-      PreferredBackend.gpu,
-    ],
-    OmnixBackendPreference.gpu => const [
-      PreferredBackend.gpu,
-      PreferredBackend.cpu,
-    ],
-    OmnixBackendPreference.npu => const [
-      PreferredBackend.npu,
-      PreferredBackend.gpu,
-      PreferredBackend.cpu,
-    ],
-  };
-  if (defaultTargetPlatform == TargetPlatform.android) return candidates;
-  return candidates
-      .where((backend) => backend != PreferredBackend.npu)
-      .toList(growable: false);
 }
 
 /// Conversation wrapper used by [FlutterGemmaInferenceBackend].
@@ -145,10 +104,3 @@ Iterable<OmnixConversationEvent> mapFlutterGemmaResponse(
       }
   }
 }
-
-ModelType _modelType(OmnixModelTemplate template) => switch (template) {
-  OmnixModelTemplate.general => ModelType.general,
-  OmnixModelTemplate.gemma4 => ModelType.gemma4,
-  OmnixModelTemplate.qwen3 => ModelType.qwen3,
-  OmnixModelTemplate.phi => ModelType.phi,
-};

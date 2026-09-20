@@ -7,6 +7,7 @@ library;
 import 'src/application/omnix.dart';
 import 'src/application/omnix_runtime.dart';
 import 'src/application/capabilities/omnix_capability_registry.dart';
+import 'src/domain/agents/omnix_agent.dart';
 import 'src/infrastructure/flutter_gemma/flutter_gemma_inference_backend.dart';
 import 'src/infrastructure/flutter_gemma/flutter_gemma_model_manager.dart';
 
@@ -22,6 +23,7 @@ abstract final class FlutterGemmaOmnix {
     String? huggingFaceToken,
     int maxDownloadRetries = 10,
     OmnixCapabilityRegistry? capabilityRegistry,
+    OmnixAgentBackend? agentBackend,
   }) {
     final modelManager = FlutterGemmaModelManager(
       huggingFaceToken: huggingFaceToken,
@@ -31,6 +33,7 @@ abstract final class FlutterGemmaOmnix {
       inferenceBackend: const FlutterGemmaInferenceBackend(),
       modelManager: modelManager,
       capabilityRegistry: capabilityRegistry,
+      agentBackend: agentBackend,
     );
   }
 }

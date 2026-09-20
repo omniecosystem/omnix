@@ -21,6 +21,8 @@
   permission evaluation and execution.
 - Add a Flutter Gemma Agent skill-catalog adapter that makes Omnix enablement
   authoritative while preserving provider execution metadata.
+- Add provider-neutral agent sessions, orchestration events, structured tool
+  outputs, runtime lifecycle ownership, and a Flutter Gemma Agent backend.
 - Define capability-oriented module boundaries for Core, Workflow, Knowledge,
   Nexus, skills, and tools without prematurely splitting packages.
 - Add architecture, contribution, security, and CI foundations.

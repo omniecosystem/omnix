@@ -34,6 +34,7 @@ migrate_working_dir/
 # Example app machine-local and generated platform state
 /example/.dart_tool/
 /example/build/
+/example/android/build/
 /example/android/local.properties
 /example/ios/Flutter/ephemeral/
 /example/ios/Flutter/flutter_export_environment.sh

@@ -7,10 +7,12 @@ product UI into the engine.
 ## Initial boundaries
 
 - **Core and inference**: runtime lifecycle, model lifecycle, conversations,
-  agents, context policy, and inference scheduling.
+  provider-neutral agent sessions and events, context policy, and inference
+  scheduling.
 - **Skills and tools**: capability metadata, a runtime-owned shared registry,
   enablement snapshots, host permission policy, and structured tool execution
-  are available. Provider adapters and package loading remain in progress.
+  are available. Flutter Gemma Agent catalog and session adapters are
+  available; portable package loading remains in progress.
 - **Workflow**: durable tasks, execution state, scheduling policy, retries, and
   event history.
 - **Knowledge**: documents, embeddings, retrieval, and access-policy contracts.

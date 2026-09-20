@@ -1,6 +1,8 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:typed_data';
+
 import 'package:omnix/omnix.dart';
 import 'package:test/test.dart';
 
@@ -102,11 +104,77 @@ void main() {
       await runtime.close();
       expect(() => runtime.capabilities.register(_tool()), throwsStateError);
     });
+
+    test('reports unavailable agent support explicitly', () {
+      expect(runtime.supportsAgents, isFalse);
+      expect(
+        () => runtime.openAgent(_agentConfiguration),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('opens agents with the current capability snapshot', () async {
+      final agentBackend = _FakeAgentBackend();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        agentBackend: agentBackend,
+      );
+      runtime.capabilities.register(_tool(), enabled: false);
+
+      final session = await runtime.openAgent(_agentConfiguration);
+
+      expect(runtime.supportsAgents, isTrue);
+      expect(agentBackend.openCalls, 1);
+      expect(agentBackend.snapshot!.revision, 1);
+      expect(agentBackend.snapshot!.enabledTools, isEmpty);
+      expect(await session.ask('hello').toList(), [
+        isA<OmnixAgentTextDelta>().having(
+          (event) => event.text,
+          'text',
+          'hello',
+        ),
+      ]);
+    });
+
+    test('owns agent sessions and does not close them twice', () async {
+      final agentBackend = _FakeAgentBackend();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        agentBackend: agentBackend,
+      );
+      final session = await runtime.openAgent(_agentConfiguration);
+
+      await session.close();
+      await runtime.close();
+
+      expect(agentBackend.session.closeCalls, 1);
+    });
+
+    test('closes active agent sessions with the runtime', () async {
+      final agentBackend = _FakeAgentBackend();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        agentBackend: agentBackend,
+      );
+      await runtime.openAgent(_agentConfiguration);
+
+      await runtime.close();
+
+      expect(agentBackend.session.closeCalls, 1);
+      expect(engine.closeCalls, 1);
+    });
   });
 }
 
 const _configuration = OmnixConversationConfiguration(
   modelTemplate: OmnixModelTemplate.general,
+);
+
+const _agentConfiguration = OmnixAgentConfiguration(
+  modelTemplate: OmnixModelTemplate.gemma4,
 );
 
 OmnixTool _tool() => OmnixTool(
@@ -180,6 +248,42 @@ final class _FakeConversation implements OmnixConversation {
   Future<void> close() async {
     closeCalls++;
     if (throwOnClose) throw StateError('close failed');
+  }
+}
+
+final class _FakeAgentBackend implements OmnixAgentBackend {
+  final _FakeAgentSession session = _FakeAgentSession();
+  int openCalls = 0;
+  OmnixCapabilityRegistrySnapshot? snapshot;
+
+  @override
+  Future<OmnixAgentSession> openAgent(
+    OmnixAgentConfiguration configuration,
+    OmnixCapabilityRegistrySnapshot capabilities,
+  ) async {
+    openCalls++;
+    snapshot = capabilities;
+    return session;
+  }
+}
+
+final class _FakeAgentSession implements OmnixAgentSession {
+  int stopCalls = 0;
+  int closeCalls = 0;
+
+  @override
+  Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) async* {
+    yield OmnixAgentTextDelta(prompt);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCalls++;
+  }
+
+  @override
+  Future<void> close() async {
+    closeCalls++;
   }
 }
 

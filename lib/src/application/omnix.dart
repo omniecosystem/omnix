@@ -1,6 +1,7 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import '../domain/agents/omnix_agent.dart';
 import '../domain/engine/omnix_engine.dart';
 import '../domain/inference/omnix_conversation.dart';
 import '../domain/models/omnix_model_manager.dart';
@@ -21,10 +22,12 @@ abstract final class Omnix {
     required OmnixInferenceBackend inferenceBackend,
     OmnixModelManager? modelManager,
     OmnixCapabilityRegistry? capabilityRegistry,
+    OmnixAgentBackend? agentBackend,
   }) => OmnixRuntime(
     engine: createEngine(),
     inferenceBackend: inferenceBackend,
     modelManager: modelManager,
     capabilityRegistry: capabilityRegistry,
+    agentBackend: agentBackend,
   );
 }

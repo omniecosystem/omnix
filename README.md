@@ -90,6 +90,10 @@ runtime.capabilities.register(
 See [skills and tools](doc/CAPABILITIES.md) for capability definitions,
 enablement, permission policy, and structured execution results.
 
+An optional agent backend can open headless agent sessions over the same
+runtime-owned capability state. See [agent sessions](doc/AGENTS.md) for the
+neutral event contract, Flutter Gemma Agent adapter, and scheduling boundary.
+
 ## Development
 
 Install Flutter and Rust with `rustup`, then install the matching bridge
