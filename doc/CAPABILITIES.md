@@ -40,5 +40,21 @@ failures such as missing tools, disabled tools, denied permissions, and
 executor exceptions therefore remain structured instead of being exposed as
 provider-specific errors.
 
-Input schemas are currently descriptive. Schema validation and agent-provider
-adaptation belong to the next capability milestone.
+## Flutter Gemma Agent adapter
+
+`FlutterGemmaAgentSkillAdapter` imports a provider skill catalog into neutral
+Omnix skills and rebuilds the provider's `SkillRegistry` from an Omnix snapshot.
+Omnix therefore owns enablement while the adapter preserves execution details
+such as skill type, script name, and provider metadata.
+
+The adapter intentionally does not expose Flutter Gemma Agent's `loadSkill`,
+`runSkill`, `runIntent`, and `runMcp` dispatcher functions as general Omnix
+tools. They are implementation details of that provider's agent loop. Atomic
+application tools continue to use `OmnixTool`.
+
+## Input validation
+
+Tool arguments are validated before permission evaluation and execution. Omnix
+supports the JSON Schema keywords `type`, `properties`, `required`, `items`,
+`enum`, and `additionalProperties: false`. Other keywords are preserved but
+ignored until the supported subset expands.

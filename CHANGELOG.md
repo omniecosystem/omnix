@@ -17,6 +17,10 @@
 - Add provider-neutral skill and tool contracts, a runtime-owned shared
   capability registry, observable enablement state, host permission policy,
   and structured tool execution outcomes.
+- Validate tool arguments against a documented JSON Schema subset before
+  permission evaluation and execution.
+- Add a Flutter Gemma Agent skill-catalog adapter that makes Omnix enablement
+  authoritative while preserving provider execution metadata.
 - Define capability-oriented module boundaries for Core, Workflow, Knowledge,
   Nexus, skills, and tools without prematurely splitting packages.
 - Add architecture, contribution, security, and CI foundations.

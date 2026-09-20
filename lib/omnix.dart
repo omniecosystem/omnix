@@ -7,6 +7,7 @@ library;
 export 'src/application/omnix.dart';
 export 'src/application/omnix_runtime.dart';
 export 'src/application/capabilities/omnix_capability_registry.dart';
+export 'src/application/capabilities/omnix_tool_input_validator.dart';
 export 'src/application/models/omnix_model_manifest_parser.dart';
 export 'src/application/scheduling/inference_scheduler.dart';
 export 'src/domain/capabilities/omnix_capability.dart';

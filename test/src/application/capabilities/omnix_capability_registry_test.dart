@@ -153,6 +153,38 @@ void main() {
       );
     });
 
+    test('rejects invalid arguments before executing a tool', () async {
+      var executed = false;
+      registry.register(
+        OmnixTool(
+          metadata: _metadata(),
+          inputSchema: const {
+            'type': 'object',
+            'properties': {
+              'timezone': {'type': 'string'},
+            },
+            'required': ['timezone'],
+          },
+          execute: (_) {
+            executed = true;
+            return const OmnixToolSuccess('12:00');
+          },
+        ),
+      );
+
+      final result = await registry.executeTool(_invocation('clock'));
+
+      expect(executed, isFalse);
+      expect(
+        result,
+        isA<OmnixToolFailure>().having(
+          (failure) => failure.code,
+          'code',
+          OmnixToolFailureCode.invalidArguments,
+        ),
+      );
+    });
+
     test('unregisters capabilities and closes deterministically', () async {
       final tool = _tool();
       registry.register(tool);

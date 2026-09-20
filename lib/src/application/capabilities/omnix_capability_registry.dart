@@ -5,6 +5,7 @@ import 'dart:async';
 
 import '../../domain/capabilities/omnix_capability.dart';
 import '../../domain/capabilities/omnix_capability_registry_snapshot.dart';
+import 'omnix_tool_input_validator.dart';
 
 /// Decides whether a capability may use its declared permissions.
 abstract interface class OmnixCapabilityPermissionPolicy {
@@ -117,6 +118,16 @@ final class OmnixCapabilityRegistry {
       return OmnixToolFailure(
         code: OmnixToolFailureCode.disabled,
         message: 'Tool "${invocation.toolId}" is disabled.',
+      );
+    }
+    final validation = OmnixToolInputValidator.validate(
+      capability.inputSchema,
+      invocation.arguments,
+    );
+    if (!validation.isValid) {
+      return OmnixToolFailure(
+        code: OmnixToolFailureCode.invalidArguments,
+        message: validation.issues.join('; '),
       );
     }
     if (!await permissionPolicy.allows(capability.metadata)) {
