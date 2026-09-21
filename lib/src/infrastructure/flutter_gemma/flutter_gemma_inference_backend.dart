@@ -44,12 +44,6 @@ final class FlutterGemmaConversation implements OmnixConversation {
   bool _closed = false;
   bool _generating = false;
 
-  /// Temporary bridge for hosts whose remaining integrations still require the
-  /// Flutter Gemma chat directly, such as plugin-specific voice orchestration.
-  ///
-  /// New Omnix consumers should use [send], [stop], and [close] instead.
-  InferenceChat get nativeChat => _chat;
-
   @override
   List<OmnixMessage> get history =>
       _chat.fullHistory.map(mapFlutterGemmaMessage).toList(growable: false);

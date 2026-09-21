@@ -23,3 +23,7 @@ Omnix must therefore not add `flutter_gemma_speech` as a mandatory dependency
 merely to support voice input. Before exposing audio publicly, the core message
 contract also needs a neutral audio attachment type, format validation, model
 capability discovery, and platform-availability reporting.
+
+A host that uses `flutter_gemma_speech` can attach `VoiceSession.custom` through
+its engine-independent responder callbacks. It should not need to extract a
+provider-native chat object from Omnix merely to stream text and stop a turn.

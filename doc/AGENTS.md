@@ -60,7 +60,6 @@ agent turns through `InferenceScheduler` when interactive conversations and
 background work share one model instance. A running turn is not preempted; a
 higher-priority interactive request can run next.
 
-`FlutterGemmaAgentSession.nativeChat` is a temporary, adapter-specific bridge
-for existing hosts that still need provider history replay or voice-session
-attachment. It is not part of the neutral agent contract and new consumers
-should not build against it.
+History replay uses the neutral `OmnixMessage` contract. Speech orchestration
+should consume the session's streamed text and `stop()` operation through an
+engine-independent responder instead of reaching into the provider chat.

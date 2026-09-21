@@ -3,7 +3,6 @@
 
 import 'dart:typed_data';
 
-import 'package:flutter_gemma/flutter_gemma.dart' show InferenceChat;
 import 'package:flutter_gemma_agent/flutter_gemma_agent.dart' as agent;
 
 import '../../domain/agents/omnix_agent.dart';
@@ -73,12 +72,6 @@ final class FlutterGemmaAgentSession implements OmnixAgentSession {
   bool _closed = false;
   bool _running = false;
   bool _cancelled = false;
-
-  /// Temporary bridge for hosts whose history or voice integrations still
-  /// require the Flutter Gemma chat directly.
-  ///
-  /// New Omnix consumers should use [ask], [stop], and [close] instead.
-  InferenceChat get nativeChat => _session.chat;
 
   @override
   List<OmnixMessage> get history => _session.chat.fullHistory
