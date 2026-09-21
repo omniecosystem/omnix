@@ -4,6 +4,7 @@
 import 'dart:typed_data';
 
 import '../domain/agents/omnix_agent.dart';
+import '../domain/context/omnix_context.dart';
 import '../domain/engine/omnix_engine.dart';
 import '../domain/engine/omnix_runtime_info.dart';
 import '../domain/inference/omnix_conversation.dart';
@@ -113,17 +114,30 @@ final class OmnixRuntime {
   ///
   /// Initialization is automatic. Every opened conversation is closed when
   /// the runtime closes, even when the caller has not closed it explicitly.
+  /// When supplied, [contextPolicy] selects active replay from [history]
+  /// without mutating the host's complete durable history.
   Future<OmnixConversation> openConversation(
-    OmnixConversationConfiguration configuration,
-  ) async {
+    OmnixConversationConfiguration configuration, {
+    List<OmnixMessage> history = const [],
+    OmnixContextPolicy? contextPolicy,
+  }) async {
     _ensureOpen();
     _validateConversation(configuration);
+    final replayHistory = contextPolicy?.select(history).messages ?? history;
     await initialize();
     _ensureOpen();
 
     final conversation = await _inferenceBackend.openConversation(
       configuration,
     );
+    try {
+      if (replayHistory.isNotEmpty) {
+        await conversation.replaceHistory(replayHistory);
+      }
+    } catch (_) {
+      await conversation.close();
+      rethrow;
+    }
     if (_closing || _closed) {
       await conversation.close();
       throw StateError(
@@ -177,10 +191,15 @@ final class OmnixRuntime {
   ///
   /// Capability changes affect subsequently opened sessions. Initialization is
   /// automatic, and the runtime owns every returned session until it is closed.
+  /// When supplied, [contextPolicy] selects active replay from [history]
+  /// without mutating the host's complete durable history.
   Future<OmnixAgentSession> openAgent(
-    OmnixAgentConfiguration configuration,
-  ) async {
+    OmnixAgentConfiguration configuration, {
+    List<OmnixMessage> history = const [],
+    OmnixContextPolicy? contextPolicy,
+  }) async {
     _ensureOpen();
+    final replayHistory = contextPolicy?.select(history).messages ?? history;
     final backend = _agentBackend;
     if (backend == null) {
       throw UnsupportedError(
@@ -194,6 +213,14 @@ final class OmnixRuntime {
       configuration,
       capabilities.snapshot,
     );
+    try {
+      if (replayHistory.isNotEmpty) {
+        await session.replaceHistory(replayHistory);
+      }
+    } catch (_) {
+      await session.close();
+      rethrow;
+    }
     if (_closing || _closed) {
       await session.close();
       throw StateError('The Omnix runtime closed while opening an agent.');

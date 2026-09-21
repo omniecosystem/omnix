@@ -11,7 +11,13 @@ suspending a native session, recreating it, and replaying context without
 exposing provider message types.
 
 Session history is not a database. Closing an application process may discard
-it unless a host stores the snapshots.
+it unless a host stores the snapshots. `OmnixConversationStore` is the durable
+repository boundary for complete conversation snapshots. A store must write
+conversation metadata and ordered messages atomically.
+
+`OmnixConversationCodec` provides a versioned JSON-compatible representation,
+including multimodal message bytes. Database adapters may store binary payloads
+more efficiently as separate blobs while preserving the same decoded contract.
 
 ## Durable storage
 
@@ -24,6 +30,10 @@ An application that already owns a relational schema should adapt that schema
 to Omnix contracts instead of migrating data into an engine-owned database.
 Optional reusable storage adapters may be published separately when their
 platform dependency and schema lifecycle justify an independent package.
+
+Active model context is selected independently through `OmnixContextPolicy`.
+Context trimming affects only replay into a native session and must never be
+written back as deletion of older durable messages.
 
 ## Vector stores
 

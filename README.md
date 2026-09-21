@@ -80,6 +80,10 @@ audio, speech-to-text, text-to-speech, and optional provider adapters.
 See [persistence boundaries](doc/PERSISTENCE.md) for the distinction between
 active session history, durable relational storage, and vector indexes.
 
+See [context management](doc/CONTEXT.md) for token budgeting, recent-history
+selection, pending-input reservation, and the separation between active model
+context and complete durable history.
+
 Each runtime also owns one provider-neutral capability registry:
 
 ```dart

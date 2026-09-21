@@ -1,3 +1,12 @@
+## Unreleased
+
+- Add provider-neutral context budgets, token-estimator contracts, and a recent
+  history policy that preserves mandatory system information.
+- Allow conversations and agents to replay context-policy-selected history when
+  a session opens.
+- Add durable conversation snapshot and repository contracts plus a strict,
+  versioned JSON codec with multimodal message support.
+
 ## 0.1.0-dev.1
 
 - Establish the Omnix Flutter and Rust package foundation.

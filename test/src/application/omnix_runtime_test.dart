@@ -120,6 +120,36 @@ void main() {
       expect(engine.closeCalls, 1);
     });
 
+    test('replays only history selected for the active context', () async {
+      final history = [
+        OmnixMessage(
+          text: 'system',
+          role: OmnixMessageRole.assistant,
+          kind: OmnixMessageKind.systemInfo,
+        ),
+        OmnixMessage.text(text: 'old message', role: OmnixMessageRole.user),
+        OmnixMessage.text(text: 'new', role: OmnixMessageRole.user),
+      ];
+
+      await runtime.openConversation(
+        _configuration,
+        history: history,
+        contextPolicy: const OmnixRecentContextPolicy(
+          budget: OmnixContextBudget(
+            contextWindowTokens: 13,
+            reservedOutputTokens: 0,
+          ),
+          estimator: _MessageTextLengthEstimator(),
+        ),
+      );
+
+      expect(backend.conversation.history.map((message) => message.text), [
+        'system',
+        'new',
+      ]);
+      await runtime.close();
+    });
+
     test('closes the engine when conversation cleanup fails', () async {
       backend.conversation.throwOnClose = true;
       await runtime.openConversation(_configuration);
@@ -266,6 +296,34 @@ void main() {
       await runtime.close();
 
       expect(agentBackend.session.closeCalls, 1);
+    });
+
+    test('replays selected history into a new agent session', () async {
+      final agentBackend = _FakeAgentBackend();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        agentBackend: agentBackend,
+      );
+
+      await runtime.openAgent(
+        _agentConfiguration,
+        history: [
+          OmnixMessage.text(text: 'older', role: OmnixMessageRole.user),
+          OmnixMessage.text(text: 'new', role: OmnixMessageRole.user),
+        ],
+        contextPolicy: const OmnixRecentContextPolicy(
+          budget: OmnixContextBudget(
+            contextWindowTokens: 3,
+            reservedOutputTokens: 0,
+          ),
+          estimator: _MessageTextLengthEstimator(),
+          preserveSystemInformation: false,
+        ),
+      );
+
+      expect(agentBackend.session.history.single.text, 'new');
+      await runtime.close();
     });
 
     test('closes active agent sessions with the runtime', () async {
@@ -550,4 +608,14 @@ final class _FakeWorkflowStore implements OmnixWorkflowStore {
     tasks[task.id] = task;
     events.putIfAbsent(task.id, () => []).add(event);
   }
+}
+
+final class _MessageTextLengthEstimator implements OmnixTokenEstimator {
+  const _MessageTextLengthEstimator();
+
+  @override
+  int estimateMessage(OmnixMessage message) => message.text.length;
+
+  @override
+  int estimateText(String text) => text.length;
 }
