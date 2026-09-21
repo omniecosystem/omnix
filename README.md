@@ -27,6 +27,8 @@ move to Rust without changing the public Dart contract.
 - `hook`: Native Assets build integration.
 - `example`: a minimal host application.
 - `doc`: architecture and extraction decisions.
+- `website`: the independently deployed developer portal (excluded from the
+  pub.dev package archive).
 
 See [platform support](doc/PLATFORMS.md) for the verification tiers. Omnix is
 architected for every Flutter target while Android and Windows receive initial

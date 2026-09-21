@@ -1,0 +1,24 @@
+# Repository tooling and generated Dart/Flutter state
+/.dart_tool/
+/.flutter-plugins-dependencies
+/build/
+/coverage/
+/pubspec.lock
+
+# Generated native state
+/rust/target/
+
+# Example application generated state
+/example/.dart_tool/
+/example/build/
+/example/android/build/
+/example/android/local.properties
+/example/ios/Flutter/ephemeral/
+/example/ios/Flutter/flutter_export_environment.sh
+/example/ios/Flutter/Generated.xcconfig
+/example/macos/Flutter/ephemeral/
+/example/macos/Flutter/flutter_export_environment.sh
+/example/macos/Flutter/Flutter-Generated.xcconfig
+
+# The developer portal is deployed independently from the Dart package.
+/website/
