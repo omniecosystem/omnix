@@ -39,7 +39,9 @@ final class OmnixWorkflowRuntime {
   final Map<String, Future<void>> _scheduled = {};
 
   bool _initialized = false;
+  bool _closing = false;
   bool _closed = false;
+  Future<void>? _closeFuture;
 
   Stream<OmnixWorkflowEvent> get events => _events.stream;
 
@@ -139,20 +141,27 @@ final class OmnixWorkflowRuntime {
     }
   }
 
-  Future<void> close() async {
+  Future<void> close() => _closeFuture ??= _closeOnce();
+
+  Future<void> _closeOnce() async {
     if (_closed) return;
-    await waitForIdle();
-    _closed = true;
-    await _events.close();
+    _closing = true;
+    try {
+      await waitForIdle();
+      _closed = true;
+      await _events.close();
+    } finally {
+      _closing = false;
+    }
   }
 
   void _schedule(String taskId) {
-    if (_closed || _scheduled.containsKey(taskId)) return;
+    if (_closing || _closed || _scheduled.containsKey(taskId)) return;
     final execution = _scheduler
         .enqueue<bool>(taskId: taskId, generation: () => _executeOne(taskId))
         .then((retry) async {
           _scheduled.remove(taskId);
-          if (retry && !_closed) _schedule(taskId);
+          if (retry && !_closing && !_closed) _schedule(taskId);
         });
     _scheduled[taskId] = execution;
   }
@@ -291,6 +300,8 @@ final class OmnixWorkflowRuntime {
   }
 
   void _ensureOpen() {
-    if (_closed) throw StateError('Workflow runtime is closed.');
+    if (_closing || _closed) {
+      throw StateError('Workflow runtime is closed.');
+    }
   }
 }

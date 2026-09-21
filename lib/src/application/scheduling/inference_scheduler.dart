@@ -23,6 +23,7 @@ final class InferenceScheduler {
   bool _closed = false;
   int _sequence = 0;
   String? _activeTaskId;
+  Completer<void>? _idleCompleter;
 
   bool get isRunning => _running;
   String? get activeTaskId => _activeTaskId;
@@ -36,6 +37,12 @@ final class InferenceScheduler {
     activeTaskId: _activeTaskId,
     pendingCount: _pending.length,
   );
+
+  /// Completes when the running job and every currently queued job finish.
+  Future<void> waitForIdle() {
+    if (!_running && _pending.isEmpty) return Future.value();
+    return (_idleCompleter ??= Completer<void>()).future;
+  }
 
   Future<T> enqueue<T>({
     required String taskId,
@@ -104,6 +111,10 @@ final class InferenceScheduler {
   }
 
   void _add(_QueuedJob job) {
+    if (_idleCompleter?.isCompleted ?? false) {
+      _idleCompleter = null;
+    }
+    _idleCompleter ??= Completer<void>();
     _pending.add(job);
     _emitSnapshot();
     unawaited(_pump());
@@ -132,6 +143,10 @@ final class InferenceScheduler {
       }
     } finally {
       _pumping = false;
+      if (!_running && _pending.isEmpty) {
+        final idle = _idleCompleter;
+        if (idle != null && !idle.isCompleted) idle.complete();
+      }
     }
   }
 

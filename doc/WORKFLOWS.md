@@ -42,10 +42,9 @@ final class SummarizeExecutor implements OmnixWorkflowExecutor {
 Compose the runtime with the same scheduler used by interactive inference:
 
 ```dart
-final scheduler = InferenceScheduler();
-final workflows = OmnixWorkflowRuntime(
+final runtime = FlutterGemmaOmnix.createRuntime();
+final workflows = await runtime.openWorkflow(
   store: appWorkflowStore,
-  scheduler: scheduler,
   executors: [SummarizeExecutor()],
 );
 

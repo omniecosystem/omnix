@@ -32,4 +32,6 @@
 - Add a durable Workflow runtime with atomic task/event transitions, executor
   ports, retries, cooperative cancellation, restart recovery, and shared
   inference-scheduler arbitration.
+- Make `OmnixRuntime` own one scheduler for conversation and agent turns, expose
+  it to workflows, and drain active inference safely during shutdown.
 - Add architecture, contribution, security, and CI foundations.

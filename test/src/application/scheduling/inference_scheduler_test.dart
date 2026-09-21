@@ -172,6 +172,29 @@ void main() {
       await subscription.cancel();
     });
 
+    test('waitForIdle completes only after queued work drains', () async {
+      final release = Completer<void>();
+      final started = Completer<void>();
+      var idleCompleted = false;
+      final job = scheduler.enqueue<void>(
+        taskId: 'task-1',
+        generation: () async {
+          started.complete();
+          await release.future;
+        },
+      );
+      await started.future;
+      final idle = scheduler.waitForIdle().then((_) => idleCompleted = true);
+
+      await Future<void>.delayed(Duration.zero);
+      expect(idleCompleted, isFalse);
+
+      release.complete();
+      await job;
+      await idle;
+      expect(idleCompleted, isTrue);
+    });
+
     test('does not close while work is active', () async {
       final release = Completer<void>();
       final started = Completer<void>();

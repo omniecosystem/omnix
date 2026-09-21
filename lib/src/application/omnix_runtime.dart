@@ -13,6 +13,10 @@ import '../domain/models/omnix_model_capabilities.dart';
 import '../domain/models/omnix_model_manager.dart';
 import '../domain/models/omnix_model_manifest.dart';
 import 'capabilities/omnix_capability_registry.dart';
+import 'scheduling/inference_scheduler.dart';
+import 'workflow/omnix_workflow_runtime.dart';
+import '../domain/workflow/omnix_workflow_executor.dart';
+import '../domain/workflow/omnix_workflow_store.dart';
 
 /// Application-level owner of an Omnix engine and its conversations.
 ///
@@ -32,6 +36,7 @@ final class OmnixRuntime {
          modelManager,
          capabilityRegistry ?? OmnixCapabilityRegistry(),
          agentBackend,
+         InferenceScheduler(),
        );
 
   OmnixRuntime._(
@@ -40,6 +45,7 @@ final class OmnixRuntime {
     this._modelManager,
     this.capabilities,
     this._agentBackend,
+    this.inferenceScheduler,
   );
 
   final OmnixEngine _engine;
@@ -48,6 +54,10 @@ final class OmnixRuntime {
   final OmnixAgentBackend? _agentBackend;
   final Set<_ManagedConversation> _conversations = {};
   final Set<_ManagedAgentSession> _agentSessions = {};
+  final Set<OmnixWorkflowRuntime> _workflowRuntimes = {};
+
+  /// The single non-preemptive inference queue owned by this runtime.
+  final InferenceScheduler inferenceScheduler;
 
   /// The shared capability registry used by conversations and workflows.
   final OmnixCapabilityRegistry capabilities;
@@ -124,6 +134,7 @@ final class OmnixRuntime {
     late final _ManagedConversation managed;
     managed = _ManagedConversation(
       conversation,
+      inferenceScheduler,
       onClosed: () => _conversations.remove(managed),
     );
     _conversations.add(managed);
@@ -191,10 +202,35 @@ final class OmnixRuntime {
     late final _ManagedAgentSession managed;
     managed = _ManagedAgentSession(
       session,
+      inferenceScheduler,
       onClosed: () => _agentSessions.remove(managed),
     );
     _agentSessions.add(managed);
     return managed;
+  }
+
+  /// Opens an initialized Workflow runtime on this runtime's inference queue.
+  Future<OmnixWorkflowRuntime> openWorkflow({
+    required OmnixWorkflowStore store,
+    required Iterable<OmnixWorkflowExecutor> executors,
+    DateTime Function()? now,
+  }) async {
+    _ensureOpen();
+    await initialize();
+    _ensureOpen();
+    final workflows = OmnixWorkflowRuntime(
+      store: store,
+      scheduler: inferenceScheduler,
+      executors: executors,
+      now: now,
+    );
+    await workflows.initialize();
+    if (_closing || _closed) {
+      await workflows.close();
+      throw StateError('The Omnix runtime closed while opening Workflow.');
+    }
+    _workflowRuntimes.add(workflows);
+    return workflows;
   }
 
   /// Stops active work, closes every owned conversation, then closes the
@@ -209,6 +245,37 @@ final class OmnixRuntime {
     try {
       final conversations = _conversations.toList(growable: false);
       final agentSessions = _agentSessions.toList(growable: false);
+      final workflowRuntimes = _workflowRuntimes.toList(growable: false);
+      final workflowClosures = workflowRuntimes
+          .map((runtime) => runtime.close())
+          .toList(growable: false);
+      for (final session in agentSessions) {
+        session.disableNewWork();
+      }
+      for (final conversation in conversations) {
+        conversation.disableNewWork();
+      }
+      try {
+        await Future.wait(<Future<void>>[
+          ...agentSessions.map((session) => session.stopActive()),
+          ...conversations.map((conversation) => conversation.stopActive()),
+        ]);
+      } catch (error, stackTrace) {
+        firstError = error;
+        firstStackTrace = stackTrace;
+      }
+      try {
+        await inferenceScheduler.waitForIdle();
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+      try {
+        await Future.wait(workflowClosures);
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
       try {
         await Future.wait(<Future<void>>[
           ...agentSessions.map((session) => session.close()),
@@ -221,6 +288,13 @@ final class OmnixRuntime {
 
       try {
         await capabilities.close();
+      } catch (error, stackTrace) {
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+
+      try {
+        await inferenceScheduler.close();
       } catch (error, stackTrace) {
         firstError ??= error;
         firstStackTrace ??= stackTrace;
@@ -250,11 +324,18 @@ final class OmnixRuntime {
 }
 
 final class _ManagedAgentSession implements OmnixAgentSession {
-  _ManagedAgentSession(this._session, {required this.onClosed});
+  _ManagedAgentSession(
+    this._session,
+    this._scheduler, {
+    required this.onClosed,
+  });
 
   final OmnixAgentSession _session;
+  final InferenceScheduler _scheduler;
   final void Function() onClosed;
   bool _closed = false;
+  bool _acceptingWork = true;
+  bool _generating = false;
 
   @override
   List<OmnixMessage> get history {
@@ -270,9 +351,31 @@ final class _ManagedAgentSession implements OmnixAgentSession {
 
   @override
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) {
-    if (_closed) throw StateError('Agent session is closed.');
-    return _session.ask(prompt, imageBytes: imageBytes);
+    if (_closed || !_acceptingWork) {
+      throw StateError('Agent session is closed.');
+    }
+    return _scheduler.enqueueStream(
+      taskId: 'chat',
+      generation: () => _runAsk(prompt, imageBytes: imageBytes),
+    );
   }
+
+  Stream<OmnixAgentEvent> _runAsk(
+    String prompt, {
+    Uint8List? imageBytes,
+  }) async* {
+    if (_closed) throw StateError('Agent session is closed.');
+    _generating = true;
+    try {
+      yield* _session.ask(prompt, imageBytes: imageBytes);
+    } finally {
+      _generating = false;
+    }
+  }
+
+  void disableNewWork() => _acceptingWork = false;
+
+  Future<void> stopActive() => _generating ? _session.stop() : Future.value();
 
   @override
   Future<void> stop() {
@@ -283,6 +386,7 @@ final class _ManagedAgentSession implements OmnixAgentSession {
   @override
   Future<void> close() async {
     if (_closed) return;
+    _acceptingWork = false;
     _closed = true;
     try {
       await _session.close();
@@ -293,11 +397,18 @@ final class _ManagedAgentSession implements OmnixAgentSession {
 }
 
 final class _ManagedConversation implements OmnixConversation {
-  _ManagedConversation(this._conversation, {required this.onClosed});
+  _ManagedConversation(
+    this._conversation,
+    this._scheduler, {
+    required this.onClosed,
+  });
 
   final OmnixConversation _conversation;
+  final InferenceScheduler _scheduler;
   final void Function() onClosed;
   bool _closed = false;
+  bool _acceptingWork = true;
+  bool _generating = false;
 
   @override
   List<OmnixMessage> get history {
@@ -317,13 +428,38 @@ final class _ManagedConversation implements OmnixConversation {
     Uint8List? imageBytes,
     Uint8List? audioBytes,
   }) {
-    if (_closed) throw StateError('Conversation is closed.');
-    return _conversation.send(
-      prompt,
-      imageBytes: imageBytes,
-      audioBytes: audioBytes,
+    if (_closed || !_acceptingWork) {
+      throw StateError('Conversation is closed.');
+    }
+    return _scheduler.enqueueStream(
+      taskId: 'chat',
+      generation: () =>
+          _runSend(prompt, imageBytes: imageBytes, audioBytes: audioBytes),
     );
   }
+
+  Stream<OmnixConversationEvent> _runSend(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) async* {
+    if (_closed) throw StateError('Conversation is closed.');
+    _generating = true;
+    try {
+      yield* _conversation.send(
+        prompt,
+        imageBytes: imageBytes,
+        audioBytes: audioBytes,
+      );
+    } finally {
+      _generating = false;
+    }
+  }
+
+  void disableNewWork() => _acceptingWork = false;
+
+  Future<void> stopActive() =>
+      _generating ? _conversation.stop() : Future.value();
 
   @override
   Future<void> stop() {
@@ -334,6 +470,7 @@ final class _ManagedConversation implements OmnixConversation {
   @override
   Future<void> close() async {
     if (_closed) return;
+    _acceptingWork = false;
     _closed = true;
     try {
       await _conversation.close();

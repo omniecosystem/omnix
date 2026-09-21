@@ -1,6 +1,7 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:omnix/omnix.dart';
@@ -47,6 +48,20 @@ void main() {
       expect(engine.closeCalls, 1);
     });
 
+    test('stops active generation before closing runtime resources', () async {
+      backend.conversation.blockUntilStopped = true;
+      final conversation = await runtime.openConversation(_configuration);
+      final response = conversation.send('hello').drain<void>();
+      await backend.conversation.sendStarted.future;
+
+      await runtime.close();
+      await response;
+
+      expect(backend.conversation.stopCalls, 1);
+      expect(backend.conversation.closeCalls, 1);
+      expect(engine.closeCalls, 1);
+    });
+
     test(
       'forwards image and audio attachments without provider types',
       () async {
@@ -60,6 +75,38 @@ void main() {
 
         expect(backend.conversation.lastImageBytes, image);
         expect(backend.conversation.lastAudioBytes, audio);
+      },
+    );
+
+    test(
+      'routes conversation turns through its chat-priority scheduler',
+      () async {
+        final conversation = await runtime.openConversation(_configuration);
+        final firstStarted = Completer<void>();
+        final releaseFirst = Completer<void>();
+        final order = <String>[];
+        backend.conversation.onSend = () => order.add('chat');
+        final first = runtime.inferenceScheduler.enqueue<void>(
+          taskId: 'task-1',
+          generation: () async {
+            order.add('task-1:start');
+            firstStarted.complete();
+            await releaseFirst.future;
+            order.add('task-1:end');
+          },
+        );
+        await firstStarted.future;
+        final second = runtime.inferenceScheduler.enqueue<void>(
+          taskId: 'task-2',
+          generation: () async => order.add('task-2'),
+        );
+        final reply = conversation.send('hello').toList();
+
+        releaseFirst.complete();
+        await Future.wait<Object?>([first, second, reply]);
+
+        expect(order, ['task-1:start', 'task-1:end', 'chat', 'task-2']);
+        await runtime.close();
       },
     );
 
@@ -177,6 +224,35 @@ void main() {
       ]);
     });
 
+    test('routes agent turns through the runtime scheduler', () async {
+      final agentBackend = _FakeAgentBackend();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        agentBackend: agentBackend,
+      );
+      final session = await runtime.openAgent(_agentConfiguration);
+      final taskStarted = Completer<void>();
+      final releaseTask = Completer<void>();
+      final task = runtime.inferenceScheduler.enqueue<void>(
+        taskId: 'task-1',
+        generation: () async {
+          taskStarted.complete();
+          await releaseTask.future;
+        },
+      );
+      await taskStarted.future;
+      final reply = session.ask('hello').toList();
+
+      await Future<void>.delayed(Duration.zero);
+      expect(agentBackend.session.askCalls, 0);
+      releaseTask.complete();
+      await task;
+      await reply;
+      expect(agentBackend.session.askCalls, 1);
+      await runtime.close();
+    });
+
     test('owns agent sessions and does not close them twice', () async {
       final agentBackend = _FakeAgentBackend();
       runtime = OmnixRuntime(
@@ -205,6 +281,33 @@ void main() {
 
       expect(agentBackend.session.closeCalls, 1);
       expect(engine.closeCalls, 1);
+    });
+
+    test('closes its scheduler with the runtime', () async {
+      final scheduler = runtime.inferenceScheduler;
+
+      await runtime.close();
+
+      await expectLater(
+        scheduler.enqueue<void>(taskId: 'task', generation: () async {}),
+        throwsStateError,
+      );
+    });
+
+    test('opens and owns Workflow runtimes on the same lifecycle', () async {
+      final store = _FakeWorkflowStore();
+      final workflows = await runtime.openWorkflow(
+        store: store,
+        executors: const [],
+      );
+
+      expect(store.initializeCalls, 1);
+      await runtime.close();
+
+      await expectLater(
+        workflows.createTask(id: 'late-task', kind: 'test', title: 'Too late'),
+        throwsStateError,
+      );
     });
   });
 }
@@ -292,6 +395,10 @@ final class _FakeConversation implements OmnixConversation {
   List<OmnixMessage> _history = [];
   Uint8List? lastImageBytes;
   Uint8List? lastAudioBytes;
+  void Function()? onSend;
+  bool blockUntilStopped = false;
+  Completer<void> sendStarted = Completer<void>();
+  final Completer<void> _sendRelease = Completer<void>();
 
   @override
   List<OmnixMessage> get history => List.unmodifiable(_history);
@@ -307,6 +414,9 @@ final class _FakeConversation implements OmnixConversation {
     Uint8List? imageBytes,
     Uint8List? audioBytes,
   }) async* {
+    onSend?.call();
+    if (!sendStarted.isCompleted) sendStarted.complete();
+    if (blockUntilStopped) await _sendRelease.future;
     lastImageBytes = imageBytes;
     lastAudioBytes = audioBytes;
     yield OmnixTextDelta(prompt);
@@ -315,6 +425,7 @@ final class _FakeConversation implements OmnixConversation {
   @override
   Future<void> stop() async {
     stopCalls++;
+    if (!_sendRelease.isCompleted) _sendRelease.complete();
   }
 
   @override
@@ -343,6 +454,7 @@ final class _FakeAgentBackend implements OmnixAgentBackend {
 final class _FakeAgentSession implements OmnixAgentSession {
   int stopCalls = 0;
   int closeCalls = 0;
+  int askCalls = 0;
   List<OmnixMessage> _history = [];
 
   @override
@@ -355,6 +467,7 @@ final class _FakeAgentSession implements OmnixAgentSession {
 
   @override
   Stream<OmnixAgentEvent> ask(String prompt, {Uint8List? imageBytes}) async* {
+    askCalls++;
     yield OmnixAgentTextDelta(prompt);
   }
 
@@ -406,4 +519,35 @@ final class _FakeModelManager implements OmnixModelManager {
 
   @override
   Future<void> uninstall(String artifactName) async {}
+}
+
+final class _FakeWorkflowStore implements OmnixWorkflowStore {
+  int initializeCalls = 0;
+  final Map<String, OmnixWorkflowTask> tasks = {};
+  final Map<String, List<OmnixWorkflowEvent>> events = {};
+
+  @override
+  Future<void> initialize() async {
+    initializeCalls++;
+  }
+
+  @override
+  Future<List<OmnixWorkflowEvent>> readEvents(String taskId) async =>
+      List.unmodifiable(events[taskId] ?? const []);
+
+  @override
+  Future<OmnixWorkflowTask?> readTask(String taskId) async => tasks[taskId];
+
+  @override
+  Future<List<OmnixWorkflowTask>> readTasks() async =>
+      List.unmodifiable(tasks.values);
+
+  @override
+  Future<void> persistTransition(
+    OmnixWorkflowTask task,
+    OmnixWorkflowEvent event,
+  ) async {
+    tasks[task.id] = task;
+    events.putIfAbsent(task.id, () => []).add(event);
+  }
 }

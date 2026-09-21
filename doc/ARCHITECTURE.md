@@ -65,8 +65,9 @@ changes remain separate, reviewable commits.
 
 ## Initial module order
 
-1. Runtime events and inference scheduling contracts. (In progress: scheduler
-   extracted and consumed by a production host.)
+1. Runtime events and inference scheduling contracts. (Available: the runtime
+   owns one non-preemptive queue shared by conversation and agent turns and
+   exposed to Workflow executors.)
 2. Model identity, installation, and verification contracts. (In progress:
    portable marketplace-manifest validation, LiteRT-LM initialization,
    installation, cancellation, storage operations, and native artifact
@@ -77,9 +78,10 @@ changes remain separate, reviewable commits.
 4. Workflow task state and coordination contracts. (Foundation available:
    durable transitions and event history, retries, cooperative cancellation,
    restart recovery, executor ports, and shared scheduler arbitration.)
-5. Conversation and agent session coordination. (In progress: minimal text
-   conversation contract and Flutter Gemma adapter added; agent orchestration
-   remains in host integration code.)
+5. Conversation and agent session coordination. (In progress: provider-neutral
+   conversation and agent contracts, Flutter Gemma adapters, shared scheduling,
+   and deterministic shutdown are available; more host orchestration remains
+   to migrate.)
 6. Knowledge and retrieval contracts.
 7. Persistent stores and platform adapters.
 

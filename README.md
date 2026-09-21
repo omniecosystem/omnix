@@ -107,6 +107,8 @@ The Workflow runtime adds durable task transitions, append-only progress
 events, cooperative cancellation, retry fairness, and interrupted-task
 recovery over a host-provided atomic store. See
 [workflow runtime](doc/WORKFLOWS.md) for the contracts and composition example.
+Conversations, agent sessions, and Workflow runtimes opened through
+`OmnixRuntime` automatically use its single inference scheduler.
 
 ## Development
 
