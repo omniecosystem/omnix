@@ -54,6 +54,17 @@ final class _IntegrationInferenceBackend implements OmnixInferenceBackend {
   final _IntegrationConversation conversation = _IntegrationConversation();
 
   @override
+  OmnixInferenceProviderCapabilities get capabilities =>
+      const OmnixInferenceProviderCapabilities(
+        providerId: 'integration',
+        formats: {OmnixModelFormat.liteRtLm},
+        inputModalities: {OmnixInputModality.text},
+        platform: OmnixTargetPlatform.android,
+        supportsThinking: false,
+        supportsFunctionCalls: false,
+      );
+
+  @override
   Future<OmnixConversation> openConversation(
     OmnixConversationConfiguration configuration,
   ) async => conversation;

@@ -4,7 +4,40 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
+import '../../domain/inference/omnix_inference_provider_capabilities.dart';
+import '../../domain/models/omnix_model_capabilities.dart';
 import '../../domain/models/omnix_model_manifest.dart';
+
+/// Flutter Gemma capabilities for the platform running this application.
+OmnixInferenceProviderCapabilities flutterGemmaInferenceCapabilities() {
+  final platform = _targetPlatform();
+  return OmnixInferenceProviderCapabilities(
+    providerId: 'flutter_gemma_litertlm',
+    formats: const {OmnixModelFormat.liteRtLm},
+    inputModalities: {
+      OmnixInputModality.text,
+      OmnixInputModality.image,
+      if (platform != OmnixTargetPlatform.web) OmnixInputModality.audio,
+    },
+    platform: platform,
+    supportsThinking: true,
+    supportsFunctionCalls: true,
+  );
+}
+
+OmnixTargetPlatform _targetPlatform() {
+  if (kIsWeb) return OmnixTargetPlatform.web;
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android => OmnixTargetPlatform.android,
+    TargetPlatform.iOS => OmnixTargetPlatform.ios,
+    TargetPlatform.macOS => OmnixTargetPlatform.macos,
+    TargetPlatform.windows => OmnixTargetPlatform.windows,
+    TargetPlatform.linux => OmnixTargetPlatform.linux,
+    TargetPlatform.fuchsia => throw UnsupportedError(
+      'Flutter Gemma does not support Fuchsia.',
+    ),
+  };
+}
 
 Future<InferenceModel> getActiveFlutterGemmaModel({
   required int maxTokens,

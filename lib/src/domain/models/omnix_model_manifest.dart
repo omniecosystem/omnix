@@ -1,6 +1,8 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'omnix_model_capabilities.dart';
+
 /// Model prompt/template family understood by an inference adapter.
 enum OmnixModelTemplate { general, gemma4, qwen3, phi }
 
@@ -43,8 +45,7 @@ final class OmnixModelManifest {
     required this.sizeBytes,
     required this.sha256,
     required this.license,
-    required this.supportsThinking,
-    required this.requiresThinking,
+    required this.capabilities,
     required this.generationDefaults,
   });
 
@@ -60,7 +61,9 @@ final class OmnixModelManifest {
   final int sizeBytes;
   final String sha256;
   final String license;
-  final bool supportsThinking;
-  final bool requiresThinking;
+  final OmnixModelCapabilities capabilities;
   final OmnixGenerationDefaults generationDefaults;
+
+  bool get supportsThinking => capabilities.supportsThinking;
+  bool get requiresThinking => capabilities.requiresThinking;
 }

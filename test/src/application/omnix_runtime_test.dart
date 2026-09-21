@@ -129,6 +129,30 @@ void main() {
       );
     });
 
+    test('rejects unsupported modalities before initializing', () async {
+      backend.capabilitiesOverride = const OmnixInferenceProviderCapabilities(
+        providerId: 'text-only',
+        formats: {OmnixModelFormat.liteRtLm},
+        inputModalities: {OmnixInputModality.text},
+        platform: OmnixTargetPlatform.android,
+        supportsThinking: false,
+        supportsFunctionCalls: false,
+      );
+
+      await expectLater(
+        runtime.openConversation(
+          const OmnixConversationConfiguration(
+            modelTemplate: OmnixModelTemplate.gemma4,
+            supportsAudio: true,
+          ),
+        ),
+        throwsUnsupportedError,
+      );
+
+      expect(engine.initializeCalls, 0);
+      expect(backend.openCalls, 0);
+    });
+
     test('opens agents with the current capability snapshot', () async {
       final agentBackend = _FakeAgentBackend();
       runtime = OmnixRuntime(
@@ -235,6 +259,22 @@ final class _FakeEngine implements OmnixEngine {
 final class _FakeInferenceBackend implements OmnixInferenceBackend {
   final _FakeConversation conversation = _FakeConversation();
   int openCalls = 0;
+  OmnixInferenceProviderCapabilities capabilitiesOverride =
+      const OmnixInferenceProviderCapabilities(
+        providerId: 'fake',
+        formats: {OmnixModelFormat.liteRtLm},
+        inputModalities: {
+          OmnixInputModality.text,
+          OmnixInputModality.image,
+          OmnixInputModality.audio,
+        },
+        platform: OmnixTargetPlatform.android,
+        supportsThinking: true,
+        supportsFunctionCalls: true,
+      );
+
+  @override
+  OmnixInferenceProviderCapabilities get capabilities => capabilitiesOverride;
 
   @override
   Future<OmnixConversation> openConversation(
@@ -355,6 +395,7 @@ final class _FakeModelManager implements OmnixModelManager {
     artifactName: 'model.litertlm',
     template: request.template,
     format: request.format,
+    capabilities: request.capabilities,
   );
 
   @override

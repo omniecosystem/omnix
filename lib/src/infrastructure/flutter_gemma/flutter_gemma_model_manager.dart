@@ -125,6 +125,7 @@ final class FlutterGemmaModelManager implements OmnixModelManager {
         artifactName: artifactName,
         template: request.template,
         format: request.format,
+        capabilities: request.capabilities,
         notes: installation.notes,
       );
     } on DownloadCancelledException catch (error) {

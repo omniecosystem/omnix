@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import '../../domain/models/omnix_model_manifest.dart';
+import '../../domain/models/omnix_model_capabilities.dart';
 
 /// Validates marketplace manifests before an inference adapter downloads them.
 ///
@@ -76,6 +77,8 @@ final class OmnixModelManifestParser {
     if (requiresThinking && !supportsThinking) {
       throw StateError('Mandatory thinking requires thinking support.');
     }
+    final inputModalities = _inputModalities(manifest['input_modalities']);
+    final targetPlatforms = _targetPlatforms(manifest['platforms']);
 
     return OmnixModelManifest(
       source: source,
@@ -92,10 +95,59 @@ final class OmnixModelManifestParser {
       sizeBytes: sizeBytes,
       sha256: sha256,
       license: _requiredString(manifest, 'license'),
-      supportsThinking: supportsThinking,
-      requiresThinking: requiresThinking,
+      capabilities: OmnixModelCapabilities(
+        inputModalities: inputModalities,
+        supportsThinking: supportsThinking,
+        requiresThinking: requiresThinking,
+        supportsFunctionCalls: manifest['function_calls'] == true,
+        targetPlatforms: targetPlatforms,
+      ),
       generationDefaults: defaults,
     );
+  }
+
+  Set<OmnixInputModality> _inputModalities(Object? value) {
+    if (value == null) return const {OmnixInputModality.text};
+    if (value is! List) {
+      throw const FormatException('input_modalities must be a list.');
+    }
+    final modalities = value.map((item) {
+      if (item is! String) {
+        throw const FormatException('Invalid input modality.');
+      }
+      return switch (item) {
+        'text' => OmnixInputModality.text,
+        'image' => OmnixInputModality.image,
+        'audio' => OmnixInputModality.audio,
+        _ => throw FormatException('Unsupported input modality: $item'),
+      };
+    }).toSet();
+    if (!modalities.contains(OmnixInputModality.text)) {
+      throw const FormatException('Models must declare text input.');
+    }
+    return Set.unmodifiable(modalities);
+  }
+
+  Set<OmnixTargetPlatform> _targetPlatforms(Object? value) {
+    if (value == null) return const {};
+    if (value is! List) {
+      throw const FormatException('platforms must be a list.');
+    }
+    final platforms = value.map((item) {
+      if (item is! String) {
+        throw const FormatException('Invalid target platform.');
+      }
+      return switch (item) {
+        'android' => OmnixTargetPlatform.android,
+        'ios' => OmnixTargetPlatform.ios,
+        'macos' => OmnixTargetPlatform.macos,
+        'windows' => OmnixTargetPlatform.windows,
+        'linux' => OmnixTargetPlatform.linux,
+        'web' => OmnixTargetPlatform.web,
+        _ => throw FormatException('Unsupported target platform: $item'),
+      };
+    }).toSet();
+    return Set.unmodifiable(platforms);
   }
 
   void _validateSource(Uri source) {

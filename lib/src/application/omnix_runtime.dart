@@ -7,8 +7,11 @@ import '../domain/agents/omnix_agent.dart';
 import '../domain/engine/omnix_engine.dart';
 import '../domain/engine/omnix_runtime_info.dart';
 import '../domain/inference/omnix_conversation.dart';
+import '../domain/inference/omnix_inference_provider_capabilities.dart';
 import '../domain/inference/omnix_message.dart';
+import '../domain/models/omnix_model_capabilities.dart';
 import '../domain/models/omnix_model_manager.dart';
+import '../domain/models/omnix_model_manifest.dart';
 import 'capabilities/omnix_capability_registry.dart';
 
 /// Application-level owner of an Omnix engine and its conversations.
@@ -60,6 +63,14 @@ final class OmnixRuntime {
   /// Whether this runtime was composed with agent-session support.
   bool get supportsAgents => _agentBackend != null;
 
+  /// Inference features available in the current provider and platform.
+  OmnixInferenceProviderCapabilities get inferenceCapabilities =>
+      _inferenceBackend.capabilities;
+
+  /// Evaluates a model manifest without loading native model resources.
+  OmnixModelCompatibility evaluateModel(OmnixModelManifest model) =>
+      inferenceCapabilities.evaluate(model);
+
   /// Model installation and storage operations configured for this runtime.
   OmnixModelManager get models =>
       _modelManager ??
@@ -96,6 +107,7 @@ final class OmnixRuntime {
     OmnixConversationConfiguration configuration,
   ) async {
     _ensureOpen();
+    _validateConversation(configuration);
     await initialize();
     _ensureOpen();
 
@@ -116,6 +128,38 @@ final class OmnixRuntime {
     );
     _conversations.add(managed);
     return managed;
+  }
+
+  void _validateConversation(OmnixConversationConfiguration configuration) {
+    final provider = inferenceCapabilities;
+    final model = configuration.modelCapabilities;
+    if (configuration.supportsImages &&
+        !provider.inputModalities.contains(OmnixInputModality.image)) {
+      throw UnsupportedError(
+        '${provider.providerId} does not support image input here.',
+      );
+    }
+    if (configuration.supportsAudio &&
+        !provider.inputModalities.contains(OmnixInputModality.audio)) {
+      throw UnsupportedError(
+        '${provider.providerId} does not support audio input here.',
+      );
+    }
+    if (configuration.thinking && !provider.supportsThinking) {
+      throw UnsupportedError(
+        '${provider.providerId} does not support thinking here.',
+      );
+    }
+    if (model == null) return;
+    if (configuration.supportsImages && !model.supportsImages) {
+      throw UnsupportedError('The selected model does not support images.');
+    }
+    if (configuration.supportsAudio && !model.supportsAudio) {
+      throw UnsupportedError('The selected model does not support audio.');
+    }
+    if (configuration.thinking && !model.supportsThinking) {
+      throw UnsupportedError('The selected model does not support thinking.');
+    }
   }
 
   /// Opens an agent session over the current capability snapshot.

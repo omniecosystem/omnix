@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'omnix_model_manifest.dart';
+import 'omnix_model_capabilities.dart';
 
 /// A source from which an inference model can be installed.
 sealed class OmnixModelSource {
@@ -69,6 +70,7 @@ final class OmnixModelInstallRequest {
     required this.template,
     required this.format,
     required this.source,
+    this.capabilities = const OmnixModelCapabilities(),
     this.expectedSizeBytes,
     this.expectedSha256,
   }) {
@@ -102,6 +104,7 @@ final class OmnixModelInstallRequest {
       authToken: authToken,
       foreground: foreground,
     ),
+    capabilities: manifest.capabilities,
     expectedSizeBytes: manifest.sizeBytes,
     expectedSha256: manifest.sha256,
   );
@@ -109,6 +112,7 @@ final class OmnixModelInstallRequest {
   final OmnixModelTemplate template;
   final OmnixModelFormat format;
   final OmnixModelSource source;
+  final OmnixModelCapabilities capabilities;
 
   /// Optional integrity requirements. Registry manifests always provide both.
   final int? expectedSizeBytes;
@@ -123,6 +127,7 @@ final class OmnixModelInstallation {
     required this.artifactName,
     required this.template,
     required this.format,
+    this.capabilities = const OmnixModelCapabilities(),
     this.notes = const [],
   });
 
@@ -130,6 +135,7 @@ final class OmnixModelInstallation {
   final String artifactName;
   final OmnixModelTemplate template;
   final OmnixModelFormat format;
+  final OmnixModelCapabilities capabilities;
   final List<String> notes;
 }
 

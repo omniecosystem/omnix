@@ -3,7 +3,9 @@
 
 import 'dart:typed_data';
 
+import '../models/omnix_model_capabilities.dart';
 import '../models/omnix_model_manifest.dart';
+import 'omnix_inference_provider_capabilities.dart';
 import 'omnix_message.dart';
 
 /// Settings for one local multi-turn conversation.
@@ -20,7 +22,46 @@ final class OmnixConversationConfiguration {
     this.thinking = false,
     this.supportsImages = false,
     this.supportsAudio = false,
+    this.modelCapabilities,
   });
+
+  /// Derives safe runtime settings from a validated model manifest.
+  factory OmnixConversationConfiguration.fromManifest(
+    OmnixModelManifest manifest, {
+    int? maxOutputTokens,
+    String? systemInstruction,
+    bool? thinking,
+  }) {
+    final enableThinking = thinking ?? manifest.capabilities.requiresThinking;
+    if (enableThinking && !manifest.capabilities.supportsThinking) {
+      throw ArgumentError.value(
+        thinking,
+        'thinking',
+        'The model does not support thinking.',
+      );
+    }
+    if (!enableThinking && manifest.capabilities.requiresThinking) {
+      throw ArgumentError.value(
+        thinking,
+        'thinking',
+        'The model requires thinking.',
+      );
+    }
+    return OmnixConversationConfiguration(
+      modelTemplate: manifest.template,
+      preferredBackend: manifest.preferredBackend,
+      maxTokens: manifest.generationDefaults.maxTokens,
+      maxOutputTokens: maxOutputTokens,
+      temperature: manifest.generationDefaults.temperature,
+      topK: manifest.generationDefaults.topK,
+      topP: manifest.generationDefaults.topP,
+      systemInstruction: systemInstruction,
+      thinking: enableThinking,
+      supportsImages: manifest.capabilities.supportsImages,
+      supportsAudio: manifest.capabilities.supportsAudio,
+      modelCapabilities: manifest.capabilities,
+    );
+  }
 
   final OmnixModelTemplate modelTemplate;
   final OmnixBackendPreference preferredBackend;
@@ -37,6 +78,10 @@ final class OmnixConversationConfiguration {
 
   /// Whether turns may include a whole 16 kHz mono WAV recording.
   final bool supportsAudio;
+
+  /// Declared model capabilities, when this configuration came from a model
+  /// descriptor or manifest.
+  final OmnixModelCapabilities? modelCapabilities;
 }
 
 /// A response fragment emitted while a conversation turn is generated.
@@ -93,6 +138,9 @@ abstract interface class OmnixConversation {
 
 /// Backend capable of opening local model conversations.
 abstract interface class OmnixInferenceBackend {
+  /// Capabilities available from this provider in the current environment.
+  OmnixInferenceProviderCapabilities get capabilities;
+
   Future<OmnixConversation> openConversation(
     OmnixConversationConfiguration configuration,
   );

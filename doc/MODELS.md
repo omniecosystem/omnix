@@ -11,6 +11,40 @@ This registers the LiteRT-LM inference engine and exposes model operations at
 `runtime.models`. Applications do not need to import Flutter Gemma or its
 engine package directly.
 
+## Capability discovery
+
+Model manifests declare input modalities, thinking behavior, function-calling
+support, and optional target platforms through `OmnixModelCapabilities`.
+Inference adapters expose their current platform support through
+`OmnixInferenceProviderCapabilities`.
+
+This allows a host to reject an incompatible model before downloading or
+loading native resources:
+
+```dart
+final compatibility = runtime.evaluateModel(manifest);
+if (!compatibility.isCompatible) {
+  throw StateError(compatibility.issues.join('\n'));
+}
+```
+
+`isCompatible` covers hard blockers such as format, platform, and mandatory
+thinking. `unavailableCapabilities` reports optional model features the current
+provider cannot expose, allowing the host to offer a reduced mode deliberately.
+
+Conversation settings can be derived from the same manifest, avoiding a second
+set of manually maintained modality and generation flags:
+
+```dart
+final conversation = await runtime.openConversation(
+  OmnixConversationConfiguration.fromManifest(manifest),
+);
+```
+
+Missing capability fields are interpreted conservatively: text input only, no
+function calling, and no platform restriction. This keeps existing manifests
+valid without silently advertising functionality they did not declare.
+
 ## Sources
 
 `OmnixModelInstallRequest` accepts network, Flutter asset, existing file, and

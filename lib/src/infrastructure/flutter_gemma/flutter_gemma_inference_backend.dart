@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../domain/inference/omnix_conversation.dart';
+import '../../domain/inference/omnix_inference_provider_capabilities.dart';
 import '../../domain/inference/omnix_message.dart';
 import 'flutter_gemma_model_loader.dart';
 
@@ -16,6 +17,10 @@ import 'flutter_gemma_model_loader.dart';
 /// creates and closes that conversation deterministically.
 final class FlutterGemmaInferenceBackend implements OmnixInferenceBackend {
   const FlutterGemmaInferenceBackend();
+
+  @override
+  OmnixInferenceProviderCapabilities get capabilities =>
+      flutterGemmaInferenceCapabilities();
 
   @override
   Future<OmnixConversation> openConversation(

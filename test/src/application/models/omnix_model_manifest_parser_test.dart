@@ -25,6 +25,9 @@ void main() {
     'license': 'Apache-2.0',
     'thinking': false,
     'thinking_mandatory': false,
+    'function_calls': true,
+    'input_modalities': ['text', 'image', 'audio'],
+    'platforms': ['android', 'windows'],
     'temperature': 0.7,
     'top_k': 40,
     'top_p': 0.95,
@@ -40,6 +43,13 @@ void main() {
       expect(model.preferredBackend, OmnixBackendPreference.cpu);
       expect(model.sizeBytes, 2000000);
       expect(model.generationDefaults.maxTokens, 4096);
+      expect(model.capabilities.supportsImages, isTrue);
+      expect(model.capabilities.supportsAudio, isTrue);
+      expect(model.capabilities.supportsFunctionCalls, isTrue);
+      expect(model.capabilities.targetPlatforms, {
+        OmnixTargetPlatform.android,
+        OmnixTargetPlatform.windows,
+      });
     });
 
     test('rejects unpinned download URLs', () {
@@ -69,6 +79,28 @@ void main() {
       expect(
         () => parser.parse(source: source, manifest: manifest),
         throwsA(isA<StateError>()),
+      );
+    });
+
+    test('defaults omitted capabilities conservatively', () {
+      final manifest = validManifest()
+        ..remove('function_calls')
+        ..remove('input_modalities')
+        ..remove('platforms');
+
+      final model = parser.parse(source: source, manifest: manifest);
+
+      expect(model.capabilities.inputModalities, {OmnixInputModality.text});
+      expect(model.capabilities.supportsFunctionCalls, isFalse);
+      expect(model.capabilities.targetPlatforms, isEmpty);
+    });
+
+    test('rejects a multimodal declaration without text input', () {
+      final manifest = validManifest()..['input_modalities'] = ['image'];
+
+      expect(
+        () => parser.parse(source: source, manifest: manifest),
+        throwsFormatException,
       );
     });
   });

@@ -71,8 +71,7 @@ final _manifest = OmnixModelManifest(
   sizeBytes: 1000,
   sha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   license: 'Apache-2.0',
-  supportsThinking: true,
-  requiresThinking: false,
+  capabilities: const OmnixModelCapabilities(supportsThinking: true),
   generationDefaults: const OmnixGenerationDefaults(
     temperature: 1,
     topK: 64,
