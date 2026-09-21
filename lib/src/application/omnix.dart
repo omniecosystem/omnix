@@ -8,6 +8,7 @@ import '../domain/models/omnix_model_manager.dart';
 import '../infrastructure/rust/rust_omnix_engine.dart';
 import 'capabilities/omnix_capability_registry.dart';
 import 'omnix_runtime.dart';
+import 'scheduling/inference_scheduler.dart';
 
 /// Composition root for creating Omnix runtime instances.
 abstract final class Omnix {
@@ -23,11 +24,13 @@ abstract final class Omnix {
     OmnixModelManager? modelManager,
     OmnixCapabilityRegistry? capabilityRegistry,
     OmnixAgentBackend? agentBackend,
+    InferenceScheduler? inferenceScheduler,
   }) => OmnixRuntime(
     engine: createEngine(),
     inferenceBackend: inferenceBackend,
     modelManager: modelManager,
     capabilityRegistry: capabilityRegistry,
     agentBackend: agentBackend,
+    inferenceScheduler: inferenceScheduler,
   );
 }

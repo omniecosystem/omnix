@@ -55,14 +55,19 @@ final conversation = await OmnixConversationCoordinator.open(
   ),
 );
 
-await for (final event in conversation.send('Continue our discussion')) {
+await for (final event in conversation.send(
+  augmentedPrompt,
+  durablePrompt: 'Continue our discussion',
+)) {
   // Render text, thinking, or tool-call events.
 }
 ```
 
 Overlapping turns on the same coordinator are rejected. If generation fails,
 events already emitted remain observable to the caller, but the incomplete turn
-is not committed to durable history.
+is not committed to durable history. `durablePrompt` lets retrieval-augmented
+applications send hidden context to the model without storing it as text the
+user supposedly wrote.
 
 ## Vector stores
 

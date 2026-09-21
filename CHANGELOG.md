@@ -11,6 +11,9 @@
   successful turns without deleting trimmed history.
 - Serialize native conversation and agent-session creation, history replay, and
   standalone history replacement through the shared inference scheduler.
+- Allow hosts to supply an application-owned inference scheduler and retain its
+  lifecycle ownership.
+- Allow augmented model input to retain a separate durable user-visible prompt.
 
 ## 0.1.0-dev.1
 

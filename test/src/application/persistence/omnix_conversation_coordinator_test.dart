@@ -109,6 +109,23 @@ void main() {
       expect(coordinator.isGenerating, isFalse);
     });
 
+    test(
+      'persists the visible prompt instead of augmented model input',
+      () async {
+        final coordinator = await _open(runtime: runtime, store: store);
+
+        await coordinator
+            .send(
+              'Context: private retrieval\n\nQuestion: Hello',
+              durablePrompt: 'Hello',
+            )
+            .drain<void>();
+
+        expect(coordinator.history.first.text, 'Hello');
+        expect(conversation.lastPrompt, contains('private retrieval'));
+      },
+    );
+
     test('rejects overlapping turns', () async {
       conversation.block = true;
       final coordinator = await _open(runtime: runtime, store: store);
@@ -250,6 +267,7 @@ final class _FakeConversation implements OmnixConversation {
   List<OmnixMessage> _history = [];
   List<OmnixMessage> historyWhenSent = [];
   Object? errorAfterFirstEvent;
+  String? lastPrompt;
   bool block = false;
   final Completer<void> sendStarted = Completer<void>();
   final Completer<void> release = Completer<void>();
@@ -268,6 +286,7 @@ final class _FakeConversation implements OmnixConversation {
     dynamic imageBytes,
     dynamic audioBytes,
   }) async* {
+    lastPrompt = prompt;
     historyWhenSent = List.of(_history);
     if (!sendStarted.isCompleted) sendStarted.complete();
     if (block) await release.future;

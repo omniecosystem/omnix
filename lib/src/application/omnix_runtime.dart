@@ -31,13 +31,15 @@ final class OmnixRuntime {
     OmnixModelManager? modelManager,
     OmnixCapabilityRegistry? capabilityRegistry,
     OmnixAgentBackend? agentBackend,
+    InferenceScheduler? inferenceScheduler,
   }) : this._(
          engine,
          inferenceBackend,
          modelManager,
          capabilityRegistry ?? OmnixCapabilityRegistry(),
          agentBackend,
-         InferenceScheduler(),
+         inferenceScheduler ?? InferenceScheduler(),
+         inferenceScheduler == null,
        );
 
   OmnixRuntime._(
@@ -47,12 +49,14 @@ final class OmnixRuntime {
     this.capabilities,
     this._agentBackend,
     this.inferenceScheduler,
+    this._ownsInferenceScheduler,
   );
 
   final OmnixEngine _engine;
   final OmnixInferenceBackend _inferenceBackend;
   final OmnixModelManager? _modelManager;
   final OmnixAgentBackend? _agentBackend;
+  final bool _ownsInferenceScheduler;
   final Set<_ManagedConversation> _conversations = {};
   final Set<_ManagedAgentSession> _agentSessions = {};
   final Set<OmnixWorkflowRuntime> _workflowRuntimes = {};
@@ -330,11 +334,13 @@ final class OmnixRuntime {
         firstStackTrace ??= stackTrace;
       }
 
-      try {
-        await inferenceScheduler.close();
-      } catch (error, stackTrace) {
-        firstError ??= error;
-        firstStackTrace ??= stackTrace;
+      if (_ownsInferenceScheduler) {
+        try {
+          await inferenceScheduler.close();
+        } catch (error, stackTrace) {
+          firstError ??= error;
+          firstStackTrace ??= stackTrace;
+        }
       }
 
       try {

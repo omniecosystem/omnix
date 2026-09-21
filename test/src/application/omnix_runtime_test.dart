@@ -415,6 +415,23 @@ void main() {
       );
     });
 
+    test('does not close an application-owned scheduler', () async {
+      final scheduler = InferenceScheduler();
+      runtime = OmnixRuntime(
+        engine: engine,
+        inferenceBackend: backend,
+        inferenceScheduler: scheduler,
+      );
+
+      await runtime.close();
+
+      await scheduler.enqueue<void>(
+        taskId: 'host-task',
+        generation: () async {},
+      );
+      await scheduler.close();
+    });
+
     test('opens and owns Workflow runtimes on the same lifecycle', () async {
       final store = _FakeWorkflowStore();
       final workflows = await runtime.openWorkflow(

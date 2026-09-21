@@ -114,6 +114,9 @@ recovery over a host-provided atomic store. See
 [workflow runtime](doc/WORKFLOWS.md) for the contracts and composition example.
 Conversations, agent sessions, and Workflow runtimes opened through
 `OmnixRuntime` automatically use its single inference scheduler.
+Applications that already coordinate other model workloads may supply their
+own `InferenceScheduler`; the application retains responsibility for closing
+an injected scheduler.
 
 ## Development
 

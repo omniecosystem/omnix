@@ -108,6 +108,7 @@ final class OmnixConversationCoordinator {
   /// Generates one turn and atomically persists it after successful completion.
   Stream<OmnixConversationEvent> send(
     String prompt, {
+    String? durablePrompt,
     Uint8List? imageBytes,
     Uint8List? audioBytes,
   }) async* {
@@ -116,6 +117,12 @@ final class OmnixConversationCoordinator {
       throw StateError('A conversation turn is already active.');
     }
     final userMessage = OmnixMessage(
+      text: durablePrompt ?? prompt,
+      role: OmnixMessageRole.user,
+      imageBytes: imageBytes,
+      audioBytes: audioBytes,
+    );
+    final inferenceMessage = OmnixMessage(
       text: prompt,
       role: OmnixMessageRole.user,
       imageBytes: imageBytes,
@@ -123,7 +130,7 @@ final class OmnixConversationCoordinator {
     );
     final selection = _contextPolicy.select(
       _history,
-      additionalMessages: [userMessage],
+      additionalMessages: [inferenceMessage],
     );
     _lastContextSelection = selection;
     _turnActive = true;
