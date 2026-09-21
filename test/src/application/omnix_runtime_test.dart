@@ -47,6 +47,22 @@ void main() {
       expect(engine.closeCalls, 1);
     });
 
+    test(
+      'forwards image and audio attachments without provider types',
+      () async {
+        final conversation = await runtime.openConversation(_configuration);
+        final image = Uint8List.fromList([1, 2]);
+        final audio = Uint8List.fromList([3, 4]);
+
+        await conversation
+            .send('describe', imageBytes: image, audioBytes: audio)
+            .drain<void>();
+
+        expect(backend.conversation.lastImageBytes, image);
+        expect(backend.conversation.lastAudioBytes, audio);
+      },
+    );
+
     test('does not close a conversation twice', () async {
       final conversation = await runtime.openConversation(_configuration);
 
@@ -234,6 +250,8 @@ final class _FakeConversation implements OmnixConversation {
   int closeCalls = 0;
   bool throwOnClose = false;
   List<OmnixMessage> _history = [];
+  Uint8List? lastImageBytes;
+  Uint8List? lastAudioBytes;
 
   @override
   List<OmnixMessage> get history => List.unmodifiable(_history);
@@ -244,7 +262,13 @@ final class _FakeConversation implements OmnixConversation {
   }
 
   @override
-  Stream<OmnixConversationEvent> send(String prompt) async* {
+  Stream<OmnixConversationEvent> send(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) async* {
+    lastImageBytes = imageBytes;
+    lastAudioBytes = audioBytes;
     yield OmnixTextDelta(prompt);
   }
 

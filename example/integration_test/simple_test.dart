@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:integration_test/integration_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:omnix/omnix.dart';
@@ -71,7 +73,11 @@ final class _IntegrationConversation implements OmnixConversation {
   }
 
   @override
-  Stream<OmnixConversationEvent> send(String prompt) async* {
+  Stream<OmnixConversationEvent> send(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) async* {
     yield OmnixTextDelta(prompt);
   }
 

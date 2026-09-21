@@ -1,6 +1,8 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:typed_data';
+
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../../domain/inference/omnix_conversation.dart';
@@ -22,6 +24,8 @@ final class FlutterGemmaInferenceBackend implements OmnixInferenceBackend {
     final model = await getActiveFlutterGemmaModel(
       maxTokens: configuration.maxTokens,
       preferredBackend: configuration.preferredBackend,
+      supportImage: configuration.supportsImages,
+      supportAudio: configuration.supportsAudio,
     );
     final chat = await model.createChat(
       temperature: configuration.temperature,
@@ -31,6 +35,8 @@ final class FlutterGemmaInferenceBackend implements OmnixInferenceBackend {
       isThinking: configuration.thinking,
       modelType: flutterGemmaModelType(configuration.modelTemplate),
       systemInstruction: configuration.systemInstruction,
+      supportImage: configuration.supportsImages,
+      supportAudio: configuration.supportsAudio,
     );
     return FlutterGemmaConversation(chat);
   }
@@ -58,15 +64,41 @@ final class FlutterGemmaConversation implements OmnixConversation {
   }
 
   @override
-  Stream<OmnixConversationEvent> send(String prompt) async* {
+  Stream<OmnixConversationEvent> send(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) async* {
     if (_closed) throw StateError('Conversation is closed.');
     if (_generating) throw StateError('Generation is already in progress.');
     final text = prompt.trim();
     if (text.isEmpty) throw ArgumentError.value(prompt, 'prompt', 'is empty');
+    if (imageBytes != null && !_chat.supportsImages) {
+      throw ArgumentError.value(
+        imageBytes,
+        'imageBytes',
+        'Conversation was not opened with image support.',
+      );
+    }
+    if (audioBytes != null && !_chat.supportAudio) {
+      throw ArgumentError.value(
+        audioBytes,
+        'audioBytes',
+        'Conversation was not opened with audio support.',
+      );
+    }
 
     _generating = true;
     try {
-      await _chat.addQuery(Message.text(text: text, isUser: true));
+      await _chat.addQuery(
+        Message(
+          text: text,
+          isUser: true,
+          imageBytes: imageBytes,
+          images: imageBytes == null ? const [] : [imageBytes],
+          audioBytes: audioBytes,
+        ),
+      );
       await for (final response in _chat.generateChatResponseAsync()) {
         for (final event in mapFlutterGemmaResponse(response)) {
           yield event;

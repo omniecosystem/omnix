@@ -19,10 +19,29 @@ be preferred when it satisfies the interaction and privacy requirements.
 Dedicated speech packages remain optional adapters for transcription,
 synthesis, unsupported models, or platform-specific needs.
 
-Omnix must therefore not add `flutter_gemma_speech` as a mandatory dependency
-merely to support voice input. Before exposing audio publicly, the core message
-contract also needs a neutral audio attachment type, format validation, model
-capability discovery, and platform-availability reporting.
+Omnix therefore does not add `flutter_gemma_speech` as a mandatory dependency
+merely to support voice input. Plain conversations can opt into direct model
+audio and pass a whole 16 kHz mono WAV recording without exposing Flutter Gemma
+message types:
+
+```dart
+final conversation = await runtime.openConversation(
+  const OmnixConversationConfiguration(
+    modelTemplate: OmnixModelTemplate.gemma4,
+    supportsAudio: true,
+  ),
+);
+
+await for (final event in conversation.send(
+  'Respond to this recording.',
+  audioBytes: wavBytes,
+)) {
+  // Consume text, thinking, or tool-call events.
+}
+```
+
+Model manifests and runtime availability reporting still need to make this
+capability discoverable before hosts can enable it automatically.
 
 A host that uses `flutter_gemma_speech` can attach `VoiceSession.custom` through
 its engine-independent responder callbacks. It should not need to extract a

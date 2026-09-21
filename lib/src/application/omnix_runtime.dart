@@ -268,9 +268,17 @@ final class _ManagedConversation implements OmnixConversation {
   }
 
   @override
-  Stream<OmnixConversationEvent> send(String prompt) {
+  Stream<OmnixConversationEvent> send(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) {
     if (_closed) throw StateError('Conversation is closed.');
-    return _conversation.send(prompt);
+    return _conversation.send(
+      prompt,
+      imageBytes: imageBytes,
+      audioBytes: audioBytes,
+    );
   }
 
   @override

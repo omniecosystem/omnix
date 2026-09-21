@@ -1,6 +1,8 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:typed_data';
+
 import '../models/omnix_model_manifest.dart';
 import 'omnix_message.dart';
 
@@ -16,6 +18,8 @@ final class OmnixConversationConfiguration {
     this.topP = 0.95,
     this.systemInstruction,
     this.thinking = false,
+    this.supportsImages = false,
+    this.supportsAudio = false,
   });
 
   final OmnixModelTemplate modelTemplate;
@@ -27,6 +31,12 @@ final class OmnixConversationConfiguration {
   final double topP;
   final String? systemInstruction;
   final bool thinking;
+
+  /// Whether turns may include encoded image bytes.
+  final bool supportsImages;
+
+  /// Whether turns may include a whole 16 kHz mono WAV recording.
+  final bool supportsAudio;
 }
 
 /// A response fragment emitted while a conversation turn is generated.
@@ -68,7 +78,11 @@ abstract interface class OmnixConversation {
   Future<void> replaceHistory(List<OmnixMessage> messages);
 
   /// Adds a user turn and streams the model response.
-  Stream<OmnixConversationEvent> send(String prompt);
+  Stream<OmnixConversationEvent> send(
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  });
 
   /// Requests cancellation of the active generation.
   Future<void> stop();

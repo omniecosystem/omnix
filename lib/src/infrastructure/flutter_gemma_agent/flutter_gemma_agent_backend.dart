@@ -39,6 +39,8 @@ final class FlutterGemmaAgentBackend implements OmnixAgentBackend {
     final model = await getActiveFlutterGemmaModel(
       maxTokens: configuration.maxTokens,
       preferredBackend: configuration.preferredBackend,
+      supportImage: configuration.supportsImages,
+      supportAudio: configuration.supportsAudio,
     );
     final providerRegistry = skills.buildProviderRegistry(capabilities);
     final session = await agent.AgentSession.fromModel(

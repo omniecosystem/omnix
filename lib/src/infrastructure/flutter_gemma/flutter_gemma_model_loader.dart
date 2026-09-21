@@ -9,6 +9,8 @@ import '../../domain/models/omnix_model_manifest.dart';
 Future<InferenceModel> getActiveFlutterGemmaModel({
   required int maxTokens,
   required OmnixBackendPreference preferredBackend,
+  bool supportImage = false,
+  bool supportAudio = false,
 }) async {
   final attempts = <String>[];
   for (final backend in flutterGemmaBackendOrder(preferredBackend)) {
@@ -16,6 +18,8 @@ Future<InferenceModel> getActiveFlutterGemmaModel({
       return await FlutterGemma.getActiveModel(
         maxTokens: maxTokens,
         preferredBackend: backend,
+        supportImage: supportImage,
+        supportAudio: supportAudio,
       );
     } catch (error) {
       attempts.add('${backend.name}: $error');
