@@ -136,6 +136,23 @@ abstract interface class OmnixConversation {
   Future<void> close();
 }
 
+/// A conversation that can restore history and generate under one inference
+/// scheduler lease.
+///
+/// This prevents another session from using the shared model between context
+/// restoration and the turn that depends on that context.
+abstract interface class OmnixContextualConversation
+    implements OmnixConversation {
+  /// Replaces active history with [history], then sends [prompt] atomically
+  /// with respect to other scheduled inference work.
+  Stream<OmnixConversationEvent> sendWithHistory(
+    List<OmnixMessage> history,
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  });
+}
+
 /// Backend capable of opening local model conversations.
 abstract interface class OmnixInferenceBackend {
   /// Capabilities available from this provider in the current environment.

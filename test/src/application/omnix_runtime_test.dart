@@ -110,6 +110,69 @@ void main() {
       },
     );
 
+    test('serializes conversation creation with inference work', () async {
+      final taskStarted = Completer<void>();
+      final releaseTask = Completer<void>();
+      final task = runtime.inferenceScheduler.enqueue<void>(
+        taskId: 'task-1',
+        generation: () async {
+          taskStarted.complete();
+          await releaseTask.future;
+        },
+      );
+      await taskStarted.future;
+
+      final opening = runtime.openConversation(_configuration);
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.openCalls, 0);
+
+      releaseTask.complete();
+      await task;
+      await opening;
+      expect(backend.openCalls, 1);
+      await runtime.close();
+    });
+
+    test('restores context and sends under one scheduler lease', () async {
+      final conversation = await runtime.openConversation(_configuration);
+      expect(conversation, isA<OmnixContextualConversation>());
+      final contextual = conversation as OmnixContextualConversation;
+      final firstStarted = Completer<void>();
+      final releaseFirst = Completer<void>();
+      final order = <String>[];
+      backend.conversation.onReplaceHistory = () => order.add('replace');
+      backend.conversation.onSend = () => order.add('send');
+      final first = runtime.inferenceScheduler.enqueue<void>(
+        taskId: 'task-1',
+        generation: () async {
+          order.add('task-1:start');
+          firstStarted.complete();
+          await releaseFirst.future;
+          order.add('task-1:end');
+        },
+      );
+      await firstStarted.future;
+      final reply = contextual.sendWithHistory([
+        OmnixMessage.text(text: 'history', role: OmnixMessageRole.user),
+      ], 'hello').toList();
+      final second = runtime.inferenceScheduler.enqueue<void>(
+        taskId: 'task-2',
+        generation: () async => order.add('task-2'),
+      );
+
+      releaseFirst.complete();
+      await Future.wait<Object?>([first, reply, second]);
+
+      expect(order, [
+        'task-1:start',
+        'task-1:end',
+        'replace',
+        'send',
+        'task-2',
+      ]);
+      await runtime.close();
+    });
+
     test('does not close a conversation twice', () async {
       final conversation = await runtime.openConversation(_configuration);
 
@@ -454,6 +517,7 @@ final class _FakeConversation implements OmnixConversation {
   Uint8List? lastImageBytes;
   Uint8List? lastAudioBytes;
   void Function()? onSend;
+  void Function()? onReplaceHistory;
   bool blockUntilStopped = false;
   Completer<void> sendStarted = Completer<void>();
   final Completer<void> _sendRelease = Completer<void>();
@@ -463,6 +527,7 @@ final class _FakeConversation implements OmnixConversation {
 
   @override
   Future<void> replaceHistory(List<OmnixMessage> messages) async {
+    onReplaceHistory?.call();
     _history = List.of(messages);
   }
 

@@ -78,7 +78,8 @@ See [audio and speech](doc/SPEECH.md) for the distinction between direct model
 audio, speech-to-text, text-to-speech, and optional provider adapters.
 
 See [persistence boundaries](doc/PERSISTENCE.md) for the distinction between
-active session history, durable relational storage, and vector indexes.
+active session history, durable relational storage, vector indexes, and the
+coordinator that atomically persists complete turns.
 
 See [context management](doc/CONTEXT.md) for token budgeting, recent-history
 selection, pending-input reservation, and the separation between active model

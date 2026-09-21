@@ -35,6 +35,35 @@ Active model context is selected independently through `OmnixContextPolicy`.
 Context trimming affects only replay into a native session and must never be
 written back as deletion of older durable messages.
 
+`OmnixConversationCoordinator` enforces this boundary for ordinary
+conversations. It restores an existing snapshot, selects bounded context before
+each turn, performs context restoration and generation under one scheduler
+lease, and writes the complete finished turn atomically. Hosts remain
+responsible only for implementing `OmnixConversationStore`.
+
+```dart
+final conversation = await OmnixConversationCoordinator.open(
+  runtime: runtime,
+  store: conversationStore,
+  record: conversationRecord,
+  configuration: configuration,
+  contextPolicy: OmnixRecentContextPolicy(
+    budget: OmnixContextBudget(
+      contextWindowTokens: 8192,
+      reservedOutputTokens: 1024,
+    ),
+  ),
+);
+
+await for (final event in conversation.send('Continue our discussion')) {
+  // Render text, thinking, or tool-call events.
+}
+```
+
+Overlapping turns on the same coordinator are rejected. If generation fails,
+events already emitted remain observable to the caller, but the incomplete turn
+is not committed to durable history.
+
 ## Vector stores
 
 Embedding indexes are retrieval infrastructure, not the source of truth for

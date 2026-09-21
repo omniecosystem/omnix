@@ -6,6 +6,11 @@
   a session opens.
 - Add durable conversation snapshot and repository contracts plus a strict,
   versioned JSON codec with multimodal message support.
+- Add a durable conversation coordinator that restores bounded active context,
+  serializes context restoration with inference, and atomically stores complete
+  successful turns without deleting trimmed history.
+- Serialize native conversation and agent-session creation, history replay, and
+  standalone history replacement through the shared inference scheduler.
 
 ## 0.1.0-dev.1
 

@@ -127,17 +127,21 @@ final class OmnixRuntime {
     await initialize();
     _ensureOpen();
 
-    final conversation = await _inferenceBackend.openConversation(
-      configuration,
+    final conversation = await inferenceScheduler.enqueue<OmnixConversation>(
+      taskId: 'chat',
+      generation: () async {
+        final opened = await _inferenceBackend.openConversation(configuration);
+        try {
+          if (replayHistory.isNotEmpty) {
+            await opened.replaceHistory(replayHistory);
+          }
+          return opened;
+        } catch (_) {
+          await opened.close();
+          rethrow;
+        }
+      },
     );
-    try {
-      if (replayHistory.isNotEmpty) {
-        await conversation.replaceHistory(replayHistory);
-      }
-    } catch (_) {
-      await conversation.close();
-      rethrow;
-    }
     if (_closing || _closed) {
       await conversation.close();
       throw StateError(
@@ -209,18 +213,24 @@ final class OmnixRuntime {
     await initialize();
     _ensureOpen();
 
-    final session = await backend.openAgent(
-      configuration,
-      capabilities.snapshot,
+    final session = await inferenceScheduler.enqueue<OmnixAgentSession>(
+      taskId: 'chat',
+      generation: () async {
+        final opened = await backend.openAgent(
+          configuration,
+          capabilities.snapshot,
+        );
+        try {
+          if (replayHistory.isNotEmpty) {
+            await opened.replaceHistory(replayHistory);
+          }
+          return opened;
+        } catch (_) {
+          await opened.close();
+          rethrow;
+        }
+      },
     );
-    try {
-      if (replayHistory.isNotEmpty) {
-        await session.replaceHistory(replayHistory);
-      }
-    } catch (_) {
-      await session.close();
-      rethrow;
-    }
     if (_closing || _closed) {
       await session.close();
       throw StateError('The Omnix runtime closed while opening an agent.');
@@ -373,7 +383,10 @@ final class _ManagedAgentSession implements OmnixAgentSession {
   @override
   Future<void> replaceHistory(List<OmnixMessage> messages) {
     if (_closed) throw StateError('Agent session is closed.');
-    return _session.replaceHistory(messages);
+    return _scheduler.enqueue<void>(
+      taskId: 'chat',
+      generation: () => _session.replaceHistory(messages),
+    );
   }
 
   @override
@@ -423,7 +436,7 @@ final class _ManagedAgentSession implements OmnixAgentSession {
   }
 }
 
-final class _ManagedConversation implements OmnixConversation {
+final class _ManagedConversation implements OmnixContextualConversation {
   _ManagedConversation(
     this._conversation,
     this._scheduler, {
@@ -446,7 +459,10 @@ final class _ManagedConversation implements OmnixConversation {
   @override
   Future<void> replaceHistory(List<OmnixMessage> messages) {
     if (_closed) throw StateError('Conversation is closed.');
-    return _conversation.replaceHistory(messages);
+    return _scheduler.enqueue<void>(
+      taskId: 'chat',
+      generation: () => _conversation.replaceHistory(messages),
+    );
   }
 
   @override
@@ -463,6 +479,47 @@ final class _ManagedConversation implements OmnixConversation {
       generation: () =>
           _runSend(prompt, imageBytes: imageBytes, audioBytes: audioBytes),
     );
+  }
+
+  @override
+  Stream<OmnixConversationEvent> sendWithHistory(
+    List<OmnixMessage> history,
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) {
+    if (_closed || !_acceptingWork) {
+      throw StateError('Conversation is closed.');
+    }
+    return _scheduler.enqueueStream(
+      taskId: 'chat',
+      generation: () => _runSendWithHistory(
+        history,
+        prompt,
+        imageBytes: imageBytes,
+        audioBytes: audioBytes,
+      ),
+    );
+  }
+
+  Stream<OmnixConversationEvent> _runSendWithHistory(
+    List<OmnixMessage> history,
+    String prompt, {
+    Uint8List? imageBytes,
+    Uint8List? audioBytes,
+  }) async* {
+    if (_closed) throw StateError('Conversation is closed.');
+    _generating = true;
+    try {
+      await _conversation.replaceHistory(history);
+      yield* _conversation.send(
+        prompt,
+        imageBytes: imageBytes,
+        audioBytes: audioBytes,
+      );
+    } finally {
+      _generating = false;
+    }
   }
 
   Stream<OmnixConversationEvent> _runSend(
