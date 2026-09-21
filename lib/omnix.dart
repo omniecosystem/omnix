@@ -11,6 +11,7 @@ export 'src/application/capabilities/omnix_tool_input_validator.dart';
 export 'src/application/models/omnix_model_manifest_parser.dart';
 export 'src/application/scheduling/inference_scheduler.dart';
 export 'src/application/workflow/omnix_workflow_runtime.dart';
+export 'src/application/workflow/omnix_workflow_codec.dart';
 export 'src/domain/agents/omnix_agent.dart';
 export 'src/domain/capabilities/omnix_capability.dart';
 export 'src/domain/capabilities/omnix_capability_registry_snapshot.dart';

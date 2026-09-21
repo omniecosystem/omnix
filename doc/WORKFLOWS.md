@@ -65,3 +65,7 @@ mid-turn.
 The package intentionally does not select Drift, SQLite, or another database.
 Persistence adapters can evolve independently while the task and event
 contracts remain stable.
+
+`OmnixWorkflowCodec` provides the versioned JSON-compatible representation for
+those adapters. Persist the encoded maps as records or JSON, and reject schema
+versions newer than the adapter understands instead of guessing at fields.

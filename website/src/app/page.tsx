@@ -3,7 +3,7 @@ import Link from "next/link";
 const modules = [
   { index: "01", title: "Core + inference", description: "Runtime lifecycle, model management, conversations, context, and fair access to local inference.", state: "Available" },
   { index: "02", title: "Agents + capabilities", description: "Provider-neutral agent sessions backed by a shared registry of tools, skills, and permission policy.", state: "Available" },
-  { index: "03", title: "Workflow", description: "Durable tasks, execution state, retries, scheduling policy, and inspectable event history.", state: "Evolving" },
+  { index: "03", title: "Workflow", description: "Durable tasks, execution state, retries, scheduling policy, and inspectable event history.", state: "Available" },
   { index: "04", title: "Knowledge", description: "Documents, embeddings, retrieval, and explicit access-policy contracts for local knowledge.", state: "Planned" },
   { index: "05", title: "Nexus", description: "Discovery and control contracts for nearby devices, services, and connected environments.", state: "Planned" },
   { index: "06", title: "Rust core", description: "A measured path for moving proven, performance-sensitive components behind stable Dart contracts.", state: "Foundation" },

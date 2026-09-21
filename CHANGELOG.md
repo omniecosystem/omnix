@@ -34,4 +34,6 @@
   inference-scheduler arbitration.
 - Make `OmnixRuntime` own one scheduler for conversation and agent turns, expose
   it to workflows, and drain active inference safely during shutdown.
+- Add a strict, versioned JSON-compatible Workflow codec for portable durable
+  storage adapters.
 - Add architecture, contribution, security, and CI foundations.
