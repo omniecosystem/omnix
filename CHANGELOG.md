@@ -29,4 +29,7 @@
   dedicated speech-model package mandatory.
 - Define capability-oriented module boundaries for Core, Workflow, Knowledge,
   Nexus, skills, and tools without prematurely splitting packages.
+- Add a durable Workflow runtime with atomic task/event transitions, executor
+  ports, retries, cooperative cancellation, restart recovery, and shared
+  inference-scheduler arbitration.
 - Add architecture, contribution, security, and CI foundations.

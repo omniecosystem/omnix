@@ -103,6 +103,11 @@ An optional agent backend can open headless agent sessions over the same
 runtime-owned capability state. See [agent sessions](doc/AGENTS.md) for the
 neutral event contract, Flutter Gemma Agent adapter, and scheduling boundary.
 
+The Workflow runtime adds durable task transitions, append-only progress
+events, cooperative cancellation, retry fairness, and interrupted-task
+recovery over a host-provided atomic store. See
+[workflow runtime](doc/WORKFLOWS.md) for the contracts and composition example.
+
 ## Development
 
 Install Flutter and Rust with `rustup`, then install the matching bridge

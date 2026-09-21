@@ -74,7 +74,9 @@ changes remain separate, reviewable commits.
 3. Skill and tool registry contracts. (In progress: provider-neutral skills,
    tools, enablement, permission policy, runtime ownership, and structured tool
    execution are available; provider adapters and package loading remain.)
-4. Workflow task state and coordination contracts.
+4. Workflow task state and coordination contracts. (Foundation available:
+   durable transitions and event history, retries, cooperative cancellation,
+   restart recovery, executor ports, and shared scheduler arbitration.)
 5. Conversation and agent session coordination. (In progress: minimal text
    conversation contract and Flutter Gemma adapter added; agent orchestration
    remains in host integration code.)

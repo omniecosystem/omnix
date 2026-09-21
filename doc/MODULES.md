@@ -13,8 +13,9 @@ product UI into the engine.
   enablement snapshots, host permission policy, and structured tool execution
   are available. Flutter Gemma Agent catalog and session adapters are
   available; portable package loading remains in progress.
-- **Workflow**: durable tasks, execution state, scheduling policy, retries, and
-  event history.
+- **Workflow**: durable task and event contracts, atomic persistence boundary,
+  scheduling policy, retries, cooperative cancellation, and restart recovery
+  are available; production storage adapters remain host-selected.
 - **Knowledge**: documents, embeddings, retrieval, and access-policy contracts.
 - **Nexus**: discovery and control contracts for devices and local services.
 
