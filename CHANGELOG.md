@@ -11,6 +11,11 @@
 - Add a Flutter Gemma Knowledge backend that preserves source attribution and
   access labels, uses provider-correct document/query embedding tasks, flushes
   durable writes, and remains independent of the host-selected vector store.
+- Add transport-neutral node authentication evidence, verified principals,
+  replaceable authenticators, and Knowledge authorization policies suitable
+  for server-mediated or direct peer-to-peer deployments.
+- Add a node Knowledge service that fails closed, rejects expired principals,
+  intersects access grants, and clamps retrieval limits before semantic search.
 
 ## 0.1.0-dev.2
 

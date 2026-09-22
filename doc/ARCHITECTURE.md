@@ -85,7 +85,10 @@ changes remain separate, reviewable commits.
 6. Knowledge and retrieval contracts. (Foundation available: documents,
    chunks, access labels, citations, backend ports, semantic embedding-space
    identity, versioned transport records, and bounded RAG assembly.)
-7. Persistent stores and platform adapters.
+7. Transport-neutral node authentication and authorized semantic retrieval.
+   (Foundation available; concrete identity and transport adapters remain
+   host-selected.)
+8. Persistent stores and platform adapters.
 
 The first Rust migrations should be bounded operations such as hashing,
 manifest validation, safe package extraction, graph validation, and context
