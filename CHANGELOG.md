@@ -8,6 +8,9 @@
   token-budgeted RAG context assembly.
 - Add a strict versioned codec for transporting semantic queries and attributed
   retrieval matches across future node boundaries.
+- Add a Flutter Gemma Knowledge backend that preserves source attribution and
+  access labels, uses provider-correct document/query embedding tasks, flushes
+  durable writes, and remains independent of the host-selected vector store.
 
 ## 0.1.0-dev.2
 

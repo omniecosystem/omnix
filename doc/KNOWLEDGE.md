@@ -40,3 +40,29 @@ citations from omitted chunks. Complete retrieved chunks are added in score
 order until the budget is exhausted. The resulting text and citation list can
 be passed to a conversation as augmented inference input while the original
 user prompt remains the durable message.
+
+## Flutter Gemma adapter
+
+Applications using Flutter Gemma can compose the module after configuring the
+plugin with an embedding backend and a vector store:
+
+```dart
+import 'package:omnix/omnix.dart';
+import 'package:omnix/omnix_flutter_gemma.dart';
+
+final knowledge = FlutterGemmaOmnix.createKnowledgeCoordinator(
+  databasePath: writableVectorStorePath,
+);
+await knowledge.initialize();
+```
+
+The host selects Qdrant, SQLite, or another Flutter Gemma vector store during
+plugin initialization. Omnix does not force that storage decision. The adapter
+uses Flutter Gemma's text indexing and retrieval facade so document and query
+embeddings receive their correct asymmetric task types.
+
+Legacy entries without an access label are treated as private. Retrieval
+over-fetches candidates before applying access labels because a host may not
+have declared provider-side metadata filters. This is a compatibility and
+defense-in-depth measure; remote authorization still belongs at the
+authenticated transport boundary.
