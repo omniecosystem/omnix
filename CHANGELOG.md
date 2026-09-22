@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 0.1.0-dev.2
+
 - Add provider-neutral context budgets, token-estimator contracts, and a recent
   history policy that preserves mandatory system information.
 - Allow conversations and agents to replay context-policy-selected history when
