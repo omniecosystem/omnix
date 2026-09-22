@@ -1,5 +1,14 @@
 ## Unreleased
 
+- Add provider-neutral Knowledge documents, chunks, access labels, sources,
+  citations, embedding-space identities, and local or transport-ready semantic
+  query contracts.
+- Add a Knowledge coordinator for validated indexing, durable flushes,
+  deterministic access-filtered retrieval, semantic-space compatibility, and
+  token-budgeted RAG context assembly.
+- Add a strict versioned codec for transporting semantic queries and attributed
+  retrieval matches across future node boundaries.
+
 ## 0.1.0-dev.2
 
 - Add provider-neutral context budgets, token-estimator contracts, and a recent

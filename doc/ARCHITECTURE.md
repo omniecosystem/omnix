@@ -82,7 +82,9 @@ changes remain separate, reviewable commits.
    conversation and agent contracts, Flutter Gemma adapters, shared scheduling,
    and deterministic shutdown are available; more host orchestration remains
    to migrate.)
-6. Knowledge and retrieval contracts.
+6. Knowledge and retrieval contracts. (Foundation available: documents,
+   chunks, access labels, citations, backend ports, semantic embedding-space
+   identity, versioned transport records, and bounded RAG assembly.)
 7. Persistent stores and platform adapters.
 
 The first Rust migrations should be bounded operations such as hashing,

@@ -16,7 +16,9 @@ product UI into the engine.
 - **Workflow**: durable task and event contracts, atomic persistence boundary,
   scheduling policy, retries, cooperative cancellation, and restart recovery
   are available; production storage adapters remain host-selected.
-- **Knowledge**: documents, embeddings, retrieval, and access-policy contracts.
+- **Knowledge**: provider-neutral documents, chunks, access labels, sources,
+  citations, retrieval, embedding-space identity, semantic query contracts,
+  indexing coordination, and token-budgeted RAG context assembly are available.
 - **Nexus**: discovery and control contracts for devices and local services.
 
 The host owns the corresponding presentation, navigation, localization,
