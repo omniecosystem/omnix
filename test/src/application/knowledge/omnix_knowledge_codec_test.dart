@@ -33,6 +33,39 @@ void main() {
     expect(restored.allowedAccess, {OmnixKnowledgeAccess.public});
   });
 
+  test('round-trips text and embedding node query modalities', () {
+    final text = codec.decodeNodeQuery(
+      codec.encodeNodeQuery(
+        OmnixNodeTextKnowledgeQuery(
+          OmnixKnowledgeQuery(
+            text: 'What is shared?',
+            topK: 3,
+            allowedAccess: const {OmnixKnowledgeAccess.public},
+          ),
+        ),
+      ),
+    );
+    expect(text, isA<OmnixNodeTextKnowledgeQuery>());
+    expect((text as OmnixNodeTextKnowledgeQuery).query.text, 'What is shared?');
+
+    final embedding = codec.decodeNodeQuery(
+      codec.encodeNodeQuery(
+        OmnixNodeEmbeddingKnowledgeQuery(
+          OmnixSemanticQuery(
+            embedding: OmnixEmbedding(
+              space: OmnixEmbeddingSpace(
+                modelId: 'embedding-gemma',
+                dimensions: 2,
+              ),
+              values: const [0.2, 0.8],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(embedding, isA<OmnixNodeEmbeddingKnowledgeQuery>());
+  });
+
   test('round-trips an attributed retrieval match', () {
     final match = OmnixKnowledgeMatch(
       chunk: OmnixKnowledgeChunk(
@@ -77,5 +110,9 @@ void main() {
     malformed['embedding'] = embedding;
 
     expect(() => codec.decodeSemanticQuery(malformed), throwsFormatException);
+    expect(
+      () => codec.decodeNodeQuery(const {'schemaVersion': 1, 'kind': 'audio'}),
+      throwsFormatException,
+    );
   });
 }

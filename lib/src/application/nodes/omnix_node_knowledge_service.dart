@@ -6,7 +6,7 @@ import '../../domain/nodes/omnix_node_authentication.dart';
 import '../../domain/nodes/omnix_node_knowledge_authorization.dart';
 import '../knowledge/omnix_knowledge_coordinator.dart';
 
-/// One authenticated semantic retrieval request at a node boundary.
+/// One authenticated retrieval request at a node boundary.
 final class OmnixNodeKnowledgeRequest {
   const OmnixNodeKnowledgeRequest({
     required this.context,
@@ -16,7 +16,7 @@ final class OmnixNodeKnowledgeRequest {
 
   final OmnixNodeRequestContext context;
   final OmnixNodeAuthenticationEvidence evidence;
-  final OmnixSemanticQuery query;
+  final OmnixNodeKnowledgeQuery query;
 }
 
 enum OmnixNodeKnowledgeFailureCode {
@@ -39,7 +39,7 @@ final class OmnixNodeKnowledgeSuccess extends OmnixNodeKnowledgeResult {
   }) : matches = List.unmodifiable(matches);
 
   final OmnixNodePrincipal principal;
-  final OmnixSemanticQuery appliedQuery;
+  final OmnixNodeKnowledgeQuery appliedQuery;
   final List<OmnixKnowledgeMatch> matches;
 }
 
@@ -116,21 +116,68 @@ final class OmnixNodeKnowledgeService {
       );
     }
 
-    final constrained = OmnixSemanticQuery(
-      embedding: request.query.embedding,
-      topK: request.query.topK < grant.maximumTopK
-          ? request.query.topK
-          : grant.maximumTopK,
-      minimumScore: request.query.minimumScore > grant.minimumScoreFloor
-          ? request.query.minimumScore
-          : grant.minimumScoreFloor,
-      allowedAccess: access,
-    );
-    final matches = await _knowledge.retrieveSemantic(constrained);
+    final topK = request.query.topK < grant.maximumTopK
+        ? request.query.topK
+        : grant.maximumTopK;
+    final minimumScore = request.query.minimumScore > grant.minimumScoreFloor
+        ? request.query.minimumScore
+        : grant.minimumScoreFloor;
+    final (constrained, matches) = switch (request.query) {
+      OmnixNodeTextKnowledgeQuery(:final query) => await _retrieveText(
+        query,
+        topK: topK,
+        minimumScore: minimumScore,
+        allowedAccess: access,
+      ),
+      OmnixNodeEmbeddingKnowledgeQuery(:final query) =>
+        await _retrieveEmbedding(
+          query,
+          topK: topK,
+          minimumScore: minimumScore,
+          allowedAccess: access,
+        ),
+    };
     return OmnixNodeKnowledgeSuccess(
       principal: principal,
       appliedQuery: constrained,
       matches: matches,
+    );
+  }
+
+  Future<(OmnixNodeKnowledgeQuery, List<OmnixKnowledgeMatch>)> _retrieveText(
+    OmnixKnowledgeQuery query, {
+    required int topK,
+    required double minimumScore,
+    required Set<OmnixKnowledgeAccess> allowedAccess,
+  }) async {
+    final constrained = OmnixKnowledgeQuery(
+      text: query.text,
+      topK: topK,
+      minimumScore: minimumScore,
+      allowedAccess: allowedAccess,
+    );
+    return (
+      OmnixNodeTextKnowledgeQuery(constrained),
+      await _knowledge.retrieve(constrained),
+    );
+  }
+
+  Future<(OmnixNodeKnowledgeQuery, List<OmnixKnowledgeMatch>)>
+  _retrieveEmbedding(
+    OmnixSemanticQuery query, {
+    required int topK,
+    required double minimumScore,
+    required Set<OmnixKnowledgeAccess> allowedAccess,
+  }) async {
+    final constrained = OmnixSemanticQuery(
+      embedding: query.embedding,
+      topK: topK,
+      minimumScore: minimumScore,
+      allowedAccess: allowedAccess,
+    );
+    return (
+      OmnixNodeEmbeddingKnowledgeQuery(constrained),
+      await _knowledge.retrieveSemantic(constrained),
     );
   }
 }

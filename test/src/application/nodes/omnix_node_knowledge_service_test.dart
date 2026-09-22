@@ -49,14 +49,25 @@ void main() {
         expect(result, isA<OmnixNodeKnowledgeSuccess>());
         final success = result as OmnixNodeKnowledgeSuccess;
         expect(success.principal.nodeId, 'peer-a');
-        expect(success.appliedQuery.topK, 2);
-        expect(success.appliedQuery.minimumScore, 0.5);
-        expect(success.appliedQuery.allowedAccess, {
-          OmnixKnowledgeAccess.public,
-        });
+        final applied = success.appliedQuery;
+        expect(applied.topK, 2);
+        expect(applied.minimumScore, 0.5);
+        expect(applied.allowedAccess, {OmnixKnowledgeAccess.public});
         expect(success.matches.map((match) => match.chunk.id), ['public:0']);
       },
     );
+
+    test('accepts text when the backend owns query embedding', () async {
+      backend.results = [_match('public:0', OmnixKnowledgeAccess.public, 0.9)];
+
+      final result = await service.retrieve(_textRequest());
+
+      final success = result as OmnixNodeKnowledgeSuccess;
+      expect(success.appliedQuery, isA<OmnixNodeTextKnowledgeQuery>());
+      expect(backend.textSearchCalls, 1);
+      expect(backend.searchCalls, 0);
+      expect(success.matches.single.chunk.id, 'public:0');
+    });
 
     test('does not authorize or retrieve rejected evidence', () async {
       authenticator.result = const OmnixNodeAuthenticationRejected(
@@ -134,14 +145,33 @@ OmnixNodeKnowledgeRequest _request({
     scheme: 'opaque-test',
     payload: const [1, 2, 3],
   ),
-  query: OmnixSemanticQuery(
-    embedding: OmnixEmbedding(
-      space: OmnixEmbeddingSpace(modelId: 'embedder', dimensions: 2),
-      values: const [0.2, 0.8],
+  query: OmnixNodeEmbeddingKnowledgeQuery(
+    OmnixSemanticQuery(
+      embedding: OmnixEmbedding(
+        space: OmnixEmbeddingSpace(modelId: 'embedder', dimensions: 2),
+        values: const [0.2, 0.8],
+      ),
+      topK: topK,
+      minimumScore: minimumScore,
+      allowedAccess: allowedAccess,
     ),
-    topK: topK,
-    minimumScore: minimumScore,
-    allowedAccess: allowedAccess,
+  ),
+);
+
+OmnixNodeKnowledgeRequest _textRequest() => OmnixNodeKnowledgeRequest(
+  context: OmnixNodeRequestContext(
+    requestId: 'request-text',
+    receivedAt: DateTime.utc(2026, 1, 3),
+  ),
+  evidence: OmnixNodeAuthenticationEvidence(
+    scheme: 'opaque-test',
+    payload: const [1, 2, 3],
+  ),
+  query: OmnixNodeTextKnowledgeQuery(
+    OmnixKnowledgeQuery(
+      text: 'shared knowledge',
+      allowedAccess: const {OmnixKnowledgeAccess.public},
+    ),
   ),
 );
 
@@ -190,7 +220,7 @@ final class _Authorizer implements OmnixNodeKnowledgeAuthorizer {
   @override
   Future<OmnixNodeKnowledgeAuthorization> authorize({
     required OmnixNodePrincipal principal,
-    required OmnixSemanticQuery query,
+    required OmnixNodeKnowledgeQuery query,
     required OmnixNodeRequestContext context,
   }) async {
     calls++;
@@ -207,6 +237,7 @@ final class _SemanticBackend implements OmnixSemanticKnowledgeBackend {
 
   List<OmnixKnowledgeMatch> results = [];
   int searchCalls = 0;
+  int textSearchCalls = 0;
 
   @override
   Future<void> initialize() async {}
@@ -218,8 +249,10 @@ final class _SemanticBackend implements OmnixSemanticKnowledgeBackend {
   Future<void> remove(String chunkId) async {}
 
   @override
-  Future<List<OmnixKnowledgeMatch>> search(OmnixKnowledgeQuery query) async =>
-      results;
+  Future<List<OmnixKnowledgeMatch>> search(OmnixKnowledgeQuery query) async {
+    textSearchCalls++;
+    return results;
+  }
 
   @override
   Future<void> flush() async {}

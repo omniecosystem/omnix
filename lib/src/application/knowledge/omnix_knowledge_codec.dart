@@ -4,12 +4,53 @@
 import 'dart:convert';
 
 import '../../domain/knowledge/omnix_knowledge.dart';
+import '../../domain/nodes/omnix_node_knowledge_authorization.dart';
 
 /// Versioned JSON-compatible encoding for semantic queries and results.
 final class OmnixKnowledgeCodec {
   const OmnixKnowledgeCodec();
 
   static const int schemaVersion = 1;
+
+  Map<String, Object?> encodeNodeQuery(OmnixNodeKnowledgeQuery query) =>
+      switch (query) {
+        OmnixNodeTextKnowledgeQuery(:final query) => {
+          'schemaVersion': schemaVersion,
+          'kind': 'text',
+          'text': query.text,
+          'topK': query.topK,
+          'minimumScore': query.minimumScore,
+          'allowedAccess': _accessNames(query.allowedAccess),
+        },
+        OmnixNodeEmbeddingKnowledgeQuery(:final query) => {
+          ...encodeSemanticQuery(query),
+          'kind': 'embedding',
+        },
+      };
+
+  OmnixNodeKnowledgeQuery decodeNodeQuery(Map<String, Object?> json) {
+    try {
+      _requireVersion(json);
+      return switch (_nonEmptyString(json, 'kind')) {
+        'text' => OmnixNodeTextKnowledgeQuery(
+          OmnixKnowledgeQuery(
+            text: _nonEmptyString(json, 'text'),
+            topK: _integer(json, 'topK'),
+            minimumScore: _number(json['minimumScore'], 'minimumScore'),
+            allowedAccess: _accessSet(json['allowedAccess']),
+          ),
+        ),
+        'embedding' => OmnixNodeEmbeddingKnowledgeQuery(
+          decodeSemanticQuery(json),
+        ),
+        final kind => throw FormatException(
+          'Invalid Knowledge node query kind: $kind.',
+        ),
+      };
+    } on ArgumentError catch (error) {
+      throw FormatException('Invalid Knowledge node query: $error');
+    }
+  }
 
   Map<String, Object?> encodeSemanticQuery(OmnixSemanticQuery query) => {
     'schemaVersion': schemaVersion,

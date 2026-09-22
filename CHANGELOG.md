@@ -16,6 +16,11 @@
   for server-mediated or direct peer-to-peer deployments.
 - Add a node Knowledge service that fails closed, rejects expired principals,
   intersects access grants, and clamps retrieval limits before semantic search.
+- Let authenticated node Knowledge requests carry either natural-language text
+  or a precomputed embedding under the same policy boundary, keeping future
+  query modalities extensible without coupling authentication to transport.
+- Add a versioned, discriminated node-query encoding for transporting text and
+  embedding requests without provider types.
 
 ## 0.1.0-dev.2
 

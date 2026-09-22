@@ -4,7 +4,51 @@
 import '../knowledge/omnix_knowledge.dart';
 import 'omnix_node_authentication.dart';
 
-/// Limits granted to one authenticated node for one semantic query.
+/// A knowledge query crossing a node boundary.
+///
+/// The boundary is intentionally modality-aware: text is usable by every
+/// knowledge backend today, while embeddings avoid sharing raw query text when
+/// both nodes use compatible embedding spaces. Additional modalities can be
+/// introduced without changing authentication or authorization contracts.
+sealed class OmnixNodeKnowledgeQuery {
+  const OmnixNodeKnowledgeQuery();
+
+  int get topK;
+  double get minimumScore;
+  Set<OmnixKnowledgeAccess> get allowedAccess;
+}
+
+final class OmnixNodeTextKnowledgeQuery extends OmnixNodeKnowledgeQuery {
+  const OmnixNodeTextKnowledgeQuery(this.query);
+
+  final OmnixKnowledgeQuery query;
+
+  @override
+  int get topK => query.topK;
+
+  @override
+  double get minimumScore => query.minimumScore;
+
+  @override
+  Set<OmnixKnowledgeAccess> get allowedAccess => query.allowedAccess;
+}
+
+final class OmnixNodeEmbeddingKnowledgeQuery extends OmnixNodeKnowledgeQuery {
+  const OmnixNodeEmbeddingKnowledgeQuery(this.query);
+
+  final OmnixSemanticQuery query;
+
+  @override
+  int get topK => query.topK;
+
+  @override
+  double get minimumScore => query.minimumScore;
+
+  @override
+  Set<OmnixKnowledgeAccess> get allowedAccess => query.allowedAccess;
+}
+
+/// Limits granted to one authenticated node for one knowledge query.
 final class OmnixNodeKnowledgeGrant {
   OmnixNodeKnowledgeGrant({
     Set<OmnixKnowledgeAccess> allowedAccess = const {
@@ -61,7 +105,7 @@ final class OmnixNodeKnowledgeDenied extends OmnixNodeKnowledgeAuthorization {
 abstract interface class OmnixNodeKnowledgeAuthorizer {
   Future<OmnixNodeKnowledgeAuthorization> authorize({
     required OmnixNodePrincipal principal,
-    required OmnixSemanticQuery query,
+    required OmnixNodeKnowledgeQuery query,
     required OmnixNodeRequestContext context,
   });
 }
