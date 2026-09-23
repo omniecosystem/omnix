@@ -48,7 +48,7 @@ final class RustOmnixEngine implements OmnixEngine {
       const info = OmnixRuntimeInfo(
         apiVersion: 1,
         engineName: 'Omnix',
-        engineVersion: '0.1.0-dev.2',
+        engineVersion: '0.1.0-dev.3',
       );
       _transitionTo(OmnixEngineState.ready);
       return info;

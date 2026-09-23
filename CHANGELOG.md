@@ -1,4 +1,4 @@
-## Unreleased
+## 0.1.0-dev.3
 
 - Add provider-neutral Knowledge documents, chunks, access labels, sources,
   citations, embedding-space identities, and local or transport-ready semantic

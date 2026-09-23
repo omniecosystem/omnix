@@ -1,6 +1,6 @@
 name: omnix
 description: "An open, headless, on-device intelligence engine for Flutter applications."
-version: 0.1.0-dev.2
+version: 0.1.0-dev.3
 repository: https://github.com/omniecosystem/omnix
 
 environment:
