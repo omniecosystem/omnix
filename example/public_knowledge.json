@@ -1,0 +1,20 @@
+[
+  {
+    "id": "omnixus",
+    "title": "Omnixus overview",
+    "content": "Omnixus explores collaboration between independently controlled AI nodes using A2A.",
+    "access": "public"
+  },
+  {
+    "id": "a2a",
+    "title": "A2A overview",
+    "content": "Agent2Agent defines how agents exchange messages, tasks, and results.",
+    "access": "public"
+  },
+  {
+    "id": "private-note",
+    "title": "Private note",
+    "content": "This example private note must never cross the node boundary.",
+    "access": "private"
+  }
+]
