@@ -55,20 +55,23 @@ final class PublicDemoKnowledgeBackend implements OmnixKnowledgeBackend {
 }
 
 final class _DemoAuthenticator implements OmnixNodeAuthenticator {
+  static final _pairedId = RegExp(r'^ed25519:[0-9a-f]{64}$');
+
   @override
   Future<OmnixNodeAuthenticationResult> authenticate({
     required OmnixNodeAuthenticationEvidence evidence,
     required OmnixNodeRequestContext context,
   }) async {
-    if (evidence.scheme != 'a2a-demo-verified-caller' ||
-        utf8.decode(evidence.payload) != 'paired-demo-client') {
+    final caller = utf8.decode(evidence.payload);
+    if (evidence.scheme != 'a2a-local-verified-caller' ||
+        (caller != 'paired-demo-client' && !_pairedId.hasMatch(caller))) {
       return const OmnixNodeAuthenticationRejected(
         code: OmnixAuthenticationFailureCode.invalidEvidence,
       );
     }
     return OmnixNodeAuthenticated(
       OmnixNodePrincipal(
-        nodeId: 'paired-demo-client',
+        nodeId: caller,
         authenticationScheme: evidence.scheme,
         authenticatedAt: context.receivedAt,
       ),
@@ -82,7 +85,9 @@ final class _PublicOnlyAuthorizer implements OmnixNodeKnowledgeAuthorizer {
     required OmnixNodePrincipal principal,
     required OmnixNodeKnowledgeQuery query,
     required OmnixNodeRequestContext context,
-  }) async => principal.nodeId == 'paired-demo-client'
+  }) async =>
+      principal.nodeId == 'paired-demo-client' ||
+          _DemoAuthenticator._pairedId.hasMatch(principal.nodeId)
       ? OmnixNodeKnowledgeAllowed(
           OmnixNodeKnowledgeGrant(
             allowedAccess: {OmnixKnowledgeAccess.public},
@@ -151,7 +156,7 @@ Future<OmnixNodeKnowledgeResult> queryPublicDemo(
       receivedAt: DateTime.now().toUtc(),
     ),
     evidence: OmnixNodeAuthenticationEvidence(
-      scheme: 'a2a-demo-verified-caller',
+      scheme: 'a2a-local-verified-caller',
       payload: utf8.encode(caller),
     ),
     query: OmnixNodeTextKnowledgeQuery(

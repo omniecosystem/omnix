@@ -38,6 +38,24 @@ void main() {
       expect(result, isA<OmnixNodeKnowledgeFailure>());
     });
 
+    test('a locally verified paired peer gets public data only', () async {
+      final peer = 'ed25519:${'a' * 64}';
+      final public = await queryPublicDemo(service, peer, 'What is Omnixus?');
+      expect(public, isA<OmnixNodeKnowledgeSuccess>());
+      expect(
+        (public as OmnixNodeKnowledgeSuccess).matches.single.chunk.access,
+        OmnixKnowledgeAccess.public,
+      );
+      final private = await queryPublicDemo(service, peer, 'private note');
+      expect((private as OmnixNodeKnowledgeSuccess).matches, isEmpty);
+      final malformed = await queryPublicDemo(
+        service,
+        'ed25519:bad',
+        'Omnixus',
+      );
+      expect(malformed, isA<OmnixNodeKnowledgeFailure>());
+    });
+
     test('multiple requests share one public Knowledge service', () async {
       Future<Map<String, dynamic>> ask(int id, String question) async =>
           jsonDecode(
