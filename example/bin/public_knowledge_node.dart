@@ -1,12 +1,31 @@
 // Copyright 2026 The Omnix Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:omnix/omnix.dart';
 import 'package:omnix_example/public_knowledge_demo.dart';
 
 Future<void> main(List<String> args) async {
+  if (args.length == 1 && args[0] == '--serve') {
+    try {
+      final service = await publicDemoService(File('public_knowledge.json'));
+      // dart run may print build-hook progress without terminating its line.
+      stdout.writeln('\nOMNIXUS_DEMO_READY_V1');
+      await stdout.flush();
+      await for (final line
+          in stdin.transform(utf8.decoder).transform(const LineSplitter())) {
+        final reply = await handlePublicDemoRequest(service, line);
+        stdout.writeln('OMNIXUS_DEMO_RESULT_V1 $reply');
+        await stdout.flush();
+      }
+    } catch (_) {
+      stderr.writeln('public knowledge unavailable');
+      exitCode = 2;
+    }
+    return;
+  }
   if (args.length != 2 || args[1].trim().isEmpty) {
     stderr.writeln(
       'Usage: dart run bin/public_knowledge_node.dart <caller> <question>',

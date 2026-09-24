@@ -34,11 +34,14 @@ final class PublicDemoKnowledgeBackend implements OmnixKnowledgeBackend {
     final matches = <OmnixKnowledgeMatch>[];
     for (final chunk in _chunks) {
       if (!query.allowedAccess.contains(chunk.access)) continue;
-      final words = _terms('${chunk.source.title} ${chunk.content}');
-      final overlap = terms.intersection(words).length;
-      if (overlap == 0) continue;
+      final titleHits = terms.intersection(_terms(chunk.source.title)).length;
+      final contentHits = terms.intersection(_terms(chunk.content)).length;
+      if (titleHits + contentHits == 0) continue;
       matches.add(
-        OmnixKnowledgeMatch(chunk: chunk, score: overlap / terms.length),
+        OmnixKnowledgeMatch(
+          chunk: chunk,
+          score: (2 * titleHits + contentHits) / (3 * terms.length),
+        ),
       );
     }
     return matches;
@@ -160,3 +163,39 @@ Future<OmnixNodeKnowledgeResult> queryPublicDemo(
     ),
   ),
 );
+
+/// Handles one line of the local, sequential Rust-to-Dart demo protocol.
+/// The caller ID must have been established by the Rust A2A verifier; this
+/// function is not an independent network authentication mechanism.
+Future<String> handlePublicDemoRequest(
+  OmnixNodeKnowledgeService service,
+  String line,
+) async {
+  try {
+    final request = jsonDecode(line);
+    if (request is! Map<String, dynamic> ||
+        request['id'] is! int ||
+        request['caller'] is! String ||
+        request['question'] is! String) {
+      throw const FormatException('Invalid local request');
+    }
+    final id = request['id'] as int;
+    final caller = request['caller'] as String;
+    final question = request['question'] as String;
+    if (question.trim().isEmpty || question.length > 512) {
+      throw const FormatException('Invalid question');
+    }
+    final result = await queryPublicDemo(service, caller, question);
+    if (result is! OmnixNodeKnowledgeSuccess || result.matches.isEmpty) {
+      return jsonEncode({'id': id, 'status': 'denied'});
+    }
+    final match = result.matches.first;
+    return jsonEncode({
+      'id': id,
+      'status': 'ok',
+      'answer': '${match.chunk.content}\nSource: ${match.chunk.source.title}',
+    });
+  } catch (_) {
+    return jsonEncode({'status': 'unavailable'});
+  }
+}

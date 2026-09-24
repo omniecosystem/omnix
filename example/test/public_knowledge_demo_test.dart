@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -35,6 +36,37 @@ void main() {
     test('an unknown caller is rejected before retrieval', () async {
       final result = await queryPublicDemo(service, 'unknown', 'Omnixus');
       expect(result, isA<OmnixNodeKnowledgeFailure>());
+    });
+
+    test('multiple requests share one public Knowledge service', () async {
+      Future<Map<String, dynamic>> ask(int id, String question) async =>
+          jsonDecode(
+                await handlePublicDemoRequest(
+                  service,
+                  jsonEncode({
+                    'id': id,
+                    'caller': 'paired-demo-client',
+                    'question': question,
+                  }),
+                ),
+              )
+              as Map<String, dynamic>;
+
+      final first = await ask(1, 'What is Omnixus?');
+      final second = await ask(2, 'What is A2A?');
+      final denied = await ask(3, 'private note');
+      expect(first['status'], 'ok');
+      expect(first['id'], 1);
+      expect(second['status'], 'ok');
+      expect(second['id'], 2);
+      expect(second['answer'], contains('Agent2Agent'));
+      expect(denied['status'], 'denied');
+      expect(denied['id'], 3);
+    });
+
+    test('malformed local requests do not expose knowledge', () async {
+      final reply = jsonDecode(await handlePublicDemoRequest(service, '{}'));
+      expect(reply['status'], 'unavailable');
     });
   });
 }
