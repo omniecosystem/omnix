@@ -1437,23 +1437,13 @@ dependencies = [
 name = "omnix"
 version = "0.1.0-dev.3"
 dependencies = [
- "axum",
- "flutter_rust_bridge",
- "futures",
- "omnixus-a2a",
- "tokio",
-]
-
-[[package]]
-name = "omnixus-a2a"
-version = "0.1.0-dev.1"
-dependencies = [
  "a2a-client-lf",
  "a2a-lf",
  "a2a-server-lf",
  "axum",
  "base64 0.22.1",
  "ed25519-dalek",
+ "flutter_rust_bridge",
  "futures",
  "hex",
  "rand 0.8.8",
@@ -1461,7 +1451,10 @@ dependencies = [
  "serde",
  "serde_json",
  "subtle",
+ "tempfile",
+ "tokio",
  "url",
+ "uuid",
 ]
 
 [[package]]

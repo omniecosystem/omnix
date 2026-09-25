@@ -19,11 +19,12 @@ product UI into the engine.
 - **Knowledge**: provider-neutral documents, chunks, access labels, sources,
   citations, retrieval, embedding-space identity, semantic query contracts,
   indexing coordination, and token-budgeted RAG context assembly are available.
-- **Nexus**: the gateway for local capabilities and remote node requests. A
-  first native, public-Knowledge-only A2A caller, loopback receiver, and paired-key operations are
-  being integrated through Omnixus. Receiving requests through an in-process
-  Omnix Knowledge adapter, owner-facing pairing, Matter control, and remote
-  action policy are not implemented yet.
+- **Nexus**: the gateway for local capabilities and remote node requests. Its
+  internal Rust A2A module provides a public-Knowledge-only caller and loopback
+  receiver. A sibling `nexus::auth` module verifies experimental paired-key
+  identity; identity is not permission. Omnix supplies the access policy and
+  Knowledge callback. Owner-facing pairing, Matter control, and remote action
+  policy are not implemented yet.
 
 The host owns the corresponding presentation, navigation, localization,
 account, entitlement, and interaction design. Features that exist only to

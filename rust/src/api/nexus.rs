@@ -22,9 +22,9 @@ pub struct NexusListenerInfo {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod listener {
+    use crate::nexus::a2a::{node::TextAgentInfo, paired_auth::PeerRegistry, AsyncTextSource};
     use flutter_rust_bridge::DartFnFuture;
     use futures::future::BoxFuture;
-    use omnixus_a2a::AsyncKnowledgeSource;
     use std::{
         collections::HashMap,
         path::Path,
@@ -49,11 +49,11 @@ mod listener {
 
     struct DartKnowledge<F>(Arc<F>);
 
-    impl<F> AsyncKnowledgeSource for DartKnowledge<F>
+    impl<F> AsyncTextSource for DartKnowledge<F>
     where
         F: Fn(String, String) -> DartFnFuture<String> + Send + Sync + 'static,
     {
-        fn answer(
+        fn respond(
             &self,
             caller_id: String,
             question: String,
@@ -79,10 +79,30 @@ mod listener {
     where
         F: Fn(String, String) -> DartFnFuture<String> + Send + Sync + 'static,
     {
-        let router = omnixus_a2a::node::paired_public_router_async(
+        // Nexus owns this endpoint's access decision. Its auth module verifies
+        // the peer's signature, then asks this host policy whether the key may
+        // reach the public Knowledge callback. Read the existing demo grant
+        // format for compatibility; no other resource is authorized here.
+        let grants =
+            PeerRegistry::load_from(Path::new(&node_dir)).map_err(|_| "peer grants unavailable")?;
+        let allowed = grants
+            .peers
+            .into_iter()
+            .filter(|peer| peer.public_knowledge)
+            .map(|peer| peer.public_key)
+            .collect::<std::collections::HashSet<_>>();
+        let router = crate::nexus::a2a::node::paired_text_router_async_with_access(
             Path::new(&node_dir),
             &advertised_origin,
+            TextAgentInfo {
+                name: "Omnix public knowledge node".into(),
+                description: "Answers authorized public Knowledge requests.".into(),
+                skill_id: "public_knowledge".into(),
+                skill_name: "Public knowledge".into(),
+                skill_description: "Retrieves public Knowledge from this node.".into(),
+            },
             DartKnowledge(Arc::new(callback)),
+            move |key| allowed.contains(key),
         )?;
         let tcp = tokio::net::TcpListener::bind(("127.0.0.1", port))
             .await
@@ -169,7 +189,7 @@ pub async fn stop_public_knowledge_listener(id: u64) -> Result<(), String> {
 pub fn create_node_identity(node_dir: String) -> Result<String, String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        omnixus_a2a::paired_auth::SigningIdentity::create_in(std::path::Path::new(&node_dir))
+        crate::nexus::a2a::paired_auth::SigningIdentity::create_in(std::path::Path::new(&node_dir))
             .map(|identity| identity.public_key_hex())
             .map_err(|error| error.to_string())
     }
@@ -184,7 +204,7 @@ pub fn create_node_identity(node_dir: String) -> Result<String, String> {
 pub fn node_public_key(node_dir: String) -> Result<String, String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        omnixus_a2a::paired_auth::SigningIdentity::load_from(std::path::Path::new(&node_dir))
+        crate::nexus::a2a::paired_auth::SigningIdentity::load_from(std::path::Path::new(&node_dir))
             .map(|identity| identity.public_key_hex())
             .map_err(|error| error.to_string())
     }
@@ -199,7 +219,7 @@ pub fn node_public_key(node_dir: String) -> Result<String, String> {
 pub fn allow_public_peer(node_dir: String, public_key: String) -> Result<(), String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        omnixus_a2a::paired_auth::PeerRegistry::allow_public(
+        crate::nexus::a2a::paired_auth::PeerRegistry::allow_public(
             std::path::Path::new(&node_dir),
             &public_key,
         )
@@ -216,7 +236,7 @@ pub fn allow_public_peer(node_dir: String, public_key: String) -> Result<(), Str
 pub fn deny_public_peer(node_dir: String, public_key: String) -> Result<(), String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        omnixus_a2a::paired_auth::PeerRegistry::deny_public(
+        crate::nexus::a2a::paired_auth::PeerRegistry::deny_public(
             std::path::Path::new(&node_dir),
             &public_key,
         )
@@ -237,7 +257,7 @@ pub async fn query_peer_public_knowledge(
 ) -> Result<NexusKnowledgeReply, String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        omnixus_a2a::node::query_public_knowledge(
+        crate::nexus::a2a::node::send_text(
             std::path::Path::new(&node_dir),
             &remote_origin,
             &question,

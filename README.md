@@ -38,12 +38,12 @@ See [module boundaries](doc/MODULES.md) for how Core, Workflow, Knowledge,
 Nexus, skills, and tools map to reusable engine capabilities without mirroring
 application screens one-for-one.
 
-The experimental native Nexus integration currently resolves `omnixus-a2a` from a
-sibling `omnixus` checkout. This local development dependency is **not suitable
-for a pub.dev release**: it must become a reproducible, pinned dependency or
-be packaged with Omnix before publishing another version. The API supports
+The experimental native Nexus A2A integration is bundled in this package's
+Rust sources; it no longer depends on a sibling `omnixus` checkout. The API supports
 local identity, public-Knowledge peer grants, outgoing queries, and a loopback
 listener that calls the host's `OmnixKnowledgeCoordinator` after peer verification.
+It is a public-data experiment, not production pairing or remote-action authority.
+See [Nexus A2A demo](doc/NEXUS_A2A_DEMO.md) for the Rust test and example commands.
 
 An app can use `OmnixNexusNode` with a host-chosen private directory to read
 its public key, grant a peer, or query that peer's public Knowledge:
