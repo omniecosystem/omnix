@@ -19,10 +19,10 @@ an Omnix contract and expose capability detection rather than silently
 changing behavior.
 
 The experimental Omnixus A2A dependency is compiled only for native Rust
-targets. Its native caller passes Rust compilation checks on Windows and
-Android ARM64. Native runtime behavior and Android APK packaging remain
-unverified; iOS, macOS, and Linux builds also need verification. The web bridge
+targets. Its Windows loopback runtime round trip passes through the Rust A2A
+listener and Dart Knowledge. Android ARM64 Rust checks pass, and the example
+debug APK builds with `libomnix.so`; device runtime behavior remains untested.
+iOS, macOS, and Linux builds also need verification. The web bridge
 exposes an explicit unsupported result for these node operations rather than
 pretending that a browser can run the current native listener. This does not
-change the broader
-Omnix platform goals above.
+change the broader Omnix platform goals above.

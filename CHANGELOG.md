@@ -2,7 +2,9 @@
 
 - Add an experimental native Nexus caller for paired public-Knowledge A2A
   requests, with identity and peer-grant operations through the Rust bridge.
-  Receiving-node integration and cross-platform builds remain pending.
+- Add a loopback A2A listener bridged to Dart Knowledge retrieval; only public
+  chunks can be returned after paired-peer verification. Include a loopback
+  example and tests. Product lifecycle integration remains opt-in.
 
 ## 0.1.0-dev.3
 

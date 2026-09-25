@@ -3,6 +3,21 @@ import 'package:test/test.dart';
 
 final class _FakeTransport implements OmnixNexusTransport {
   final calls = <String>[];
+  Future<String> Function(String, String)? answer;
+
+  @override
+  Future<OmnixNexusListener> startPublicKnowledgeListener(
+    String nodeDirectory,
+    String advertisedOrigin,
+    int port,
+    Future<String> Function(String, String) answer,
+  ) async {
+    calls.add('listen:$nodeDirectory:$advertisedOrigin:$port');
+    this.answer = answer;
+    return OmnixNexusListener(() async {
+      calls.add('stop');
+    }, port: 46137);
+  }
 
   @override
   Future<String> createIdentity(String nodeDirectory) async {
@@ -37,6 +52,37 @@ final class _FakeTransport implements OmnixNexusTransport {
       taskId: 'task-1',
       texts: ['Public answer'],
     );
+  }
+}
+
+final class _MixedKnowledgeBackend implements OmnixKnowledgeBackend {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<void> index(OmnixKnowledgeChunk chunk) async {}
+  @override
+  Future<void> remove(String chunkId) async {}
+  @override
+  Future<void> flush() async {}
+  @override
+  Future<void> clear() async {}
+  @override
+  Future<List<OmnixKnowledgeMatch>> search(OmnixKnowledgeQuery query) async {
+    OmnixKnowledgeMatch match(String title, OmnixKnowledgeAccess access) =>
+        OmnixKnowledgeMatch(
+          chunk: OmnixKnowledgeChunk(
+            id: title,
+            documentId: title,
+            content: title,
+            source: OmnixKnowledgeSource(id: title, title: title),
+            access: access,
+          ),
+          score: 0.9,
+        );
+    return [
+      match('private secret', OmnixKnowledgeAccess.private),
+      match('public fact', OmnixKnowledgeAccess.public),
+    ];
   }
 }
 
@@ -75,5 +121,26 @@ void main() {
         ]);
       },
     );
+
+    test('listener returns public Knowledge only and stops once', () async {
+      final fake = _FakeTransport();
+      final node = OmnixNexusNode(nodeDirectory: 'node-a', transport: fake);
+      final listener = await node.startPublicKnowledgeListener(
+        advertisedOrigin: 'https://peer.example',
+        knowledge: OmnixKnowledgeCoordinator(_MixedKnowledgeBackend()),
+      );
+      expect(listener.port, 46137);
+      expect(fake.calls, ['listen:node-a:https://peer.example:0']);
+      expect(
+        await fake.answer!('ed25519:peer', 'public fact'),
+        'public fact\nSource: public fact',
+      );
+      expect(await fake.answer!('', 'public fact'), isEmpty);
+      expect(await fake.answer!('ed25519:peer', ' '), isEmpty);
+      await listener.stop();
+      await listener.stop();
+      expect(fake.calls.last, 'stop');
+      expect(fake.calls.where((call) => call == 'stop').length, 1);
+    });
   });
 }

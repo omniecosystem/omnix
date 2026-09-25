@@ -11,6 +11,9 @@ flutter_rust_bridge = "=2.13.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 omnixus-a2a = { path = "../../omnixus/crates/omnixus-a2a" }
+tokio = { version = "1", features = ["net", "rt", "sync", "time"] }
+futures = "0.3"
+axum = "0.8"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

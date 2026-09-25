@@ -38,12 +38,12 @@ See [module boundaries](doc/MODULES.md) for how Core, Workflow, Knowledge,
 Nexus, skills, and tools map to reusable engine capabilities without mirroring
 application screens one-for-one.
 
-The experimental native Nexus caller currently resolves `omnixus-a2a` from a
+The experimental native Nexus integration currently resolves `omnixus-a2a` from a
 sibling `omnixus` checkout. This local development dependency is **not suitable
 for a pub.dev release**: it must become a reproducible, pinned dependency or
-be packaged with Omnix before publishing another version. The API presently
-supports local identity, public-Knowledge peer grants, and outgoing queries;
-it does not host an Omnix Knowledge endpoint inside the app yet.
+be packaged with Omnix before publishing another version. The API supports
+local identity, public-Knowledge peer grants, outgoing queries, and a loopback
+listener that calls the host's `OmnixKnowledgeCoordinator` after peer verification.
 
 An app can use `OmnixNexusNode` with a host-chosen private directory to read
 its public key, grant a peer, or query that peer's public Knowledge:
@@ -57,8 +57,24 @@ final reply = await node.queryPublicKnowledge(
 print(reply.texts);
 ```
 
-The receiving A2A server still needs a host-provided Omnix Knowledge source
-and lifecycle integration; this snippet is only the outgoing native caller.
+To receive queries, a host can start a listener using its Knowledge coordinator:
+
+```dart
+final listener = await node.startPublicKnowledgeListener(
+  advertisedOrigin: 'https://this-node.example',
+  knowledge: coordinator,
+  port: 46138,
+);
+// Stop it when the host no longer wants to serve requests.
+await listener.stop();
+```
+
+The listener binds to `127.0.0.1` and only returns public chunks. The host
+must provide HTTPS reachability and an explicit pairing UX. Tailscale Serve is
+one possible private HTTPS proxy, not an Omnix or Omnixus dependency. No
+listener is started automatically by Omnix or OmniAsk. Run the local native
+round trip in `example/bin/nexus_loopback.dart` after building the Rust DLL;
+the example README has commands.
 
 ## Quick start
 

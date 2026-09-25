@@ -6,6 +6,28 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// Starts a paired, public-Knowledge-only A2A endpoint on local loopback.
+///
+/// The host must supply a reachable HTTPS origin and own any TLS proxy. The
+/// callback is invoked only after the remote peer's signed proof is verified.
+/// An empty answer denies the request. No private Knowledge or actions are
+/// exposed. Restart the listener after modifying peer grants.
+Future<NexusListenerInfo> startPublicKnowledgeListener({
+  required String nodeDir,
+  required String advertisedOrigin,
+  required int port,
+  required FutureOr<String> Function(String, String) answer,
+}) => RustLib.instance.api.crateApiNexusStartPublicKnowledgeListener(
+  nodeDir: nodeDir,
+  advertisedOrigin: advertisedOrigin,
+  port: port,
+  answer: answer,
+);
+
+/// Stops a listener started by this process.
+Future<void> stopPublicKnowledgeListener({required BigInt id}) =>
+    RustLib.instance.api.crateApiNexusStopPublicKnowledgeListener(id: id);
+
 /// Creates this node's local signing identity; refuses to replace one.
 Future<String> createNodeIdentity({required String nodeDir}) =>
     RustLib.instance.api.crateApiNexusCreateNodeIdentity(nodeDir: nodeDir);
@@ -60,4 +82,23 @@ class NexusKnowledgeReply {
           runtimeType == other.runtimeType &&
           taskId == other.taskId &&
           texts == other.texts;
+}
+
+/// A loopback-only A2A listener managed by the host application.
+class NexusListenerInfo {
+  final BigInt id;
+  final int port;
+
+  const NexusListenerInfo({required this.id, required this.port});
+
+  @override
+  int get hashCode => id.hashCode ^ port.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NexusListenerInfo &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          port == other.port;
 }

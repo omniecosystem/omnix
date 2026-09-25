@@ -1437,8 +1437,11 @@ dependencies = [
 name = "omnix"
 version = "0.1.0-dev.3"
 dependencies = [
+ "axum",
  "flutter_rust_bridge",
+ "futures",
  "omnixus-a2a",
+ "tokio",
 ]
 
 [[package]]
