@@ -17,3 +17,12 @@ Primary priority reflects initial verification capacity, not a permanent API
 or architecture limitation. Platform-specific functionality must sit behind
 an Omnix contract and expose capability detection rather than silently
 changing behavior.
+
+The experimental Omnixus A2A dependency is compiled only for native Rust
+targets. Its native caller passes Rust compilation checks on Windows and
+Android ARM64. Native runtime behavior and Android APK packaging remain
+unverified; iOS, macOS, and Linux builds also need verification. The web bridge
+exposes an explicit unsupported result for these node operations rather than
+pretending that a browser can run the current native listener. This does not
+change the broader
+Omnix platform goals above.

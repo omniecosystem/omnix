@@ -12,6 +12,7 @@ export 'src/application/context/omnix_recent_context_policy.dart';
 export 'src/application/knowledge/omnix_knowledge_coordinator.dart';
 export 'src/application/knowledge/omnix_knowledge_codec.dart';
 export 'src/application/models/omnix_model_manifest_parser.dart';
+export 'src/application/nexus/omnix_nexus_node.dart';
 export 'src/application/nodes/omnix_node_knowledge_service.dart';
 export 'src/application/persistence/omnix_conversation_codec.dart';
 export 'src/application/persistence/omnix_conversation_coordinator.dart';

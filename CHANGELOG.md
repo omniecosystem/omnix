@@ -1,3 +1,9 @@
+## Unreleased
+
+- Add an experimental native Nexus caller for paired public-Knowledge A2A
+  requests, with identity and peer-grant operations through the Rust bridge.
+  Receiving-node integration and cross-platform builds remain pending.
+
 ## 0.1.0-dev.3
 
 - Add provider-neutral Knowledge documents, chunks, access labels, sources,

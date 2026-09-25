@@ -19,7 +19,11 @@ product UI into the engine.
 - **Knowledge**: provider-neutral documents, chunks, access labels, sources,
   citations, retrieval, embedding-space identity, semantic query contracts,
   indexing coordination, and token-budgeted RAG context assembly are available.
-- **Nexus**: discovery and control contracts for devices and local services.
+- **Nexus**: the gateway for local capabilities and remote node requests. A
+  first native, public-Knowledge-only A2A caller and paired-key operations are
+  being integrated through Omnixus. Receiving requests through an in-process
+  Omnix Knowledge adapter, owner-facing pairing, Matter control, and remote
+  action policy are not implemented yet.
 
 The host owns the corresponding presentation, navigation, localization,
 account, entitlement, and interaction design. Features that exist only to
