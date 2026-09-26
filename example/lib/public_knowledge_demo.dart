@@ -99,6 +99,17 @@ final class _PublicOnlyAuthorizer implements OmnixNodeKnowledgeAuthorizer {
 
 /// Reads an explicit local fixture. No arbitrary remote file path is accepted.
 Future<OmnixNodeKnowledgeService> publicDemoService(File fixture) async {
+  final coordinator = await publicDemoKnowledge(fixture);
+  return OmnixNodeKnowledgeService(
+    knowledge: coordinator,
+    authenticator: _DemoAuthenticator(),
+    authorizer: _PublicOnlyAuthorizer(),
+  );
+}
+
+/// Indexes this node's explicit local fixture into Omnix Knowledge.
+/// The Nexus listener independently restricts remote retrieval to public data.
+Future<OmnixKnowledgeCoordinator> publicDemoKnowledge(File fixture) async {
   final decoded = jsonDecode(await fixture.readAsString());
   if (decoded is! List) throw const FormatException('Expected document list');
   final coordinator = OmnixKnowledgeCoordinator(PublicDemoKnowledgeBackend());
@@ -138,11 +149,7 @@ Future<OmnixNodeKnowledgeService> publicDemoService(File fixture) async {
       ],
     );
   }
-  return OmnixNodeKnowledgeService(
-    knowledge: coordinator,
-    authenticator: _DemoAuthenticator(),
-    authorizer: _PublicOnlyAuthorizer(),
-  );
+  return coordinator;
 }
 
 Future<OmnixNodeKnowledgeResult> queryPublicDemo(

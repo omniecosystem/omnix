@@ -1,0 +1,14 @@
+[
+  {
+    "id": "blue-notebook",
+    "title": "Blue notebook",
+    "content": "Laptop B indexes this blue notebook in its own Omnix Knowledge coordinator.",
+    "access": "public"
+  },
+  {
+    "id": "private-note-b",
+    "title": "Private note B",
+    "content": "Laptop B private note must never be returned to a remote node.",
+    "access": "private"
+  }
+]
