@@ -110,7 +110,14 @@ Future<OmnixNodeKnowledgeService> publicDemoService(File fixture) async {
 /// Indexes this node's explicit local fixture into Omnix Knowledge.
 /// The Nexus listener independently restricts remote retrieval to public data.
 Future<OmnixKnowledgeCoordinator> publicDemoKnowledge(File fixture) async {
-  final decoded = jsonDecode(await fixture.readAsString());
+  return publicDemoKnowledgeFromJson(await fixture.readAsString());
+}
+
+/// Builds an in-memory demo index from a packaged or local JSON fixture.
+Future<OmnixKnowledgeCoordinator> publicDemoKnowledgeFromJson(
+  String json,
+) async {
+  final decoded = jsonDecode(json);
   if (decoded is! List) throw const FormatException('Expected document list');
   final coordinator = OmnixKnowledgeCoordinator(PublicDemoKnowledgeBackend());
   for (final entry in decoded) {

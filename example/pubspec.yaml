@@ -45,6 +45,7 @@ dependencies:
   flutter_rust_bridge: 2.13.0
   path: ^1.9.1
   args: ^2.7.0
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - public_knowledge.json
+    - public_knowledge_laptop_b.json
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

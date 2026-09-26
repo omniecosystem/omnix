@@ -10,6 +10,29 @@ Demonstrates the intended public developer flow:
 The model is installed only after the user presses **Install model**. The
 example uses Gemma 4 E2B, which is approximately 2.6 GB.
 
+## Nexus in the Flutter example (Windows)
+
+The **Nexus** tab demonstrates the same public-Knowledge exchange from a
+Flutter UI. It does not need a downloaded chat or embedding model. Sharing is
+off by default and only serves the selected, bundled demo fixture. The
+identity lives in this app's application-support directory, **not** in the
+CLI's `OMNIXUS_NODE_DIR`; exchange and allow the new public keys on both
+devices before testing the UI against the UI.
+
+On both Windows laptops, pull the same Omnix revision, run `flutter pub get`
+from `omnix/example`, and start `flutter run -d windows`. Keep Tailscale Serve
+pointed at `127.0.0.1:46137` on each laptop, as in the CLI test below. Stop
+any CLI or Rust server using that port before pressing **Start sharing**.
+In Nexus, create each device's identity, copy its public key to the other
+device, and press **Allow public Knowledge** for that key. Paste each device's
+own exact `https://...tail...ts.net` origin from `tailscale serve status`,
+choose a different fixture on each device, and press **Start sharing**. Then
+enter the *other* device's origin under **Ask another node** and ask about
+`blue notebook` or `Omnixus` respectively. A `private note` query should
+return an error, never the private fixture entry. Grant changes take effect
+only after stopping and restarting sharing. This is an experimental, paired
+public-data demo, not production identity or private-data sharing.
+
 The device integration test exercises the application runtime and conversation
 ownership contract with a deterministic backend, so automated verification
 does not require network access or a model download.

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:omnix/omnix.dart';
 import 'package:omnix/omnix_flutter_gemma.dart';
 
+import 'nexus_example_screen.dart';
+
 const _modelUri =
     'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/'
     'resolve/main/gemma-4-E2B-it.litertlm';
@@ -36,6 +38,8 @@ class _OmnixExampleState extends State<OmnixExample> {
   bool _installed = false;
   bool _installing = false;
   bool _generating = false;
+  int _selectedPage = 0;
+  bool _nexusOpened = false;
 
   @override
   void initState() {
@@ -156,103 +160,131 @@ class _OmnixExampleState extends State<OmnixExample> {
       ),
       home: Scaffold(
         appBar: AppBar(title: const Text('Omnix example')),
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  Text(
-                    _runtimeInfo == null
-                        ? 'Initializing Omnix…'
-                        : '${_runtimeInfo!.engineName} '
-                              '${_runtimeInfo!.engineVersion} · '
-                              'Native API ${_runtimeInfo!.apiVersion}',
-                  ),
-                  const SizedBox(height: 24),
-                  if (_initializing)
-                    const LinearProgressIndicator()
-                  else if (!_installed) ...[
-                    const Text(
-                      'Install Gemma 4 E2B to run a local conversation. '
-                      'The download is approximately 2.6 GB.',
-                    ),
-                    const SizedBox(height: 12),
-                    if (_installing) ...[
-                      LinearProgressIndicator(value: _installProgress / 100),
-                      const SizedBox(height: 8),
-                      Text('$_installProgress%'),
-                    ] else
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton.icon(
-                          onPressed: _install,
-                          icon: const Icon(Icons.download_outlined),
-                          label: const Text('Install model'),
-                        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _selectedPage,
+          onDestinationSelected: (index) => setState(() {
+            _selectedPage = index;
+            if (index == 1) _nexusOpened = true;
+          }),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline),
+              label: 'Conversation',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.hub_outlined),
+              label: 'Nexus',
+            ),
+          ],
+        ),
+        body: IndexedStack(
+          index: _selectedPage,
+          children: [
+            SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: ListView(
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      Text(
+                        _runtimeInfo == null
+                            ? 'Initializing Omnix…'
+                            : '${_runtimeInfo!.engineName} '
+                                  '${_runtimeInfo!.engineVersion} · '
+                                  'Native API ${_runtimeInfo!.apiVersion}',
                       ),
-                  ] else ...[
-                    TextField(
-                      controller: _promptController,
-                      enabled: !_generating,
-                      minLines: 1,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Prompt',
-                      ),
-                      onSubmitted: (_) => _send(),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: _generating ? null : _send,
-                          icon: const Icon(Icons.send_outlined),
-                          label: const Text('Send'),
+                      const SizedBox(height: 24),
+                      if (_initializing)
+                        const LinearProgressIndicator()
+                      else if (!_installed) ...[
+                        const Text(
+                          'Install Gemma 4 E2B to run a local conversation. '
+                          'The download is approximately 2.6 GB.',
                         ),
-                        const SizedBox(width: 12),
-                        if (_generating)
-                          OutlinedButton.icon(
-                            onPressed: _stop,
-                            icon: const Icon(Icons.stop_outlined),
-                            label: const Text('Stop'),
+                        const SizedBox(height: 12),
+                        if (_installing) ...[
+                          LinearProgressIndicator(
+                            value: _installProgress / 100,
                           ),
+                          const SizedBox(height: 8),
+                          Text('$_installProgress%'),
+                        ] else
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              onPressed: _install,
+                              icon: const Icon(Icons.download_outlined),
+                              label: const Text('Install model'),
+                            ),
+                          ),
+                      ] else ...[
+                        TextField(
+                          controller: _promptController,
+                          enabled: !_generating,
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            labelText: 'Prompt',
+                          ),
+                          onSubmitted: (_) => _send(),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: _generating ? null : _send,
+                              icon: const Icon(Icons.send_outlined),
+                              label: const Text('Send'),
+                            ),
+                            const SizedBox(width: 12),
+                            if (_generating)
+                              OutlinedButton.icon(
+                                onPressed: _stop,
+                                icon: const Icon(Icons.stop_outlined),
+                                label: const Text('Stop'),
+                              ),
+                          ],
+                        ),
+                        if (_thinking.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'Thinking',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          SelectableText(_thinking),
+                        ],
+                        if (_answer.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          Text(
+                            'Response',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          SelectableText(_answer),
+                        ],
                       ],
-                    ),
-                    if (_thinking.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Thinking',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(_thinking),
+                      if (_error != null) ...[
+                        const SizedBox(height: 24),
+                        SelectableText(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
                     ],
-                    if (_answer.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        'Response',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(_answer),
-                    ],
-                  ],
-                  if (_error != null) ...[
-                    const SizedBox(height: 24),
-                    SelectableText(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
-          ),
+            if (_nexusOpened)
+              const NexusExampleScreen()
+            else
+              const SizedBox.shrink(),
+          ],
         ),
       ),
     );
