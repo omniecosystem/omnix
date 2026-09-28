@@ -169,7 +169,7 @@ class _OmnixExampleState extends State<OmnixExample> {
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.chat_bubble_outline),
-              label: 'Conversation',
+              label: 'Core',
             ),
             NavigationDestination(
               icon: Icon(Icons.hub_outlined),

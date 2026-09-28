@@ -7,8 +7,9 @@ Demonstrates the intended public developer flow:
 3. Open a conversation and stream thinking and response events.
 4. Stop generation and close owned resources.
 
-The model is installed only after the user presses **Install model**. The
-example uses Gemma 4 E2B, which is approximately 2.6 GB.
+The **Core** tab demonstrates local conversation and model management. The
+model is installed only after the user presses **Install model**. The example
+uses Gemma 4 E2B, which is approximately 2.6 GB.
 
 ## Nexus in the Flutter example (Windows)
 
