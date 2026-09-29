@@ -142,5 +142,23 @@ void main() {
       expect(fake.calls.last, 'stop');
       expect(fake.calls.where((call) => call == 'stop').length, 1);
     });
+
+    test('host callback cannot accidentally return a private match', () async {
+      final fake = _FakeTransport();
+      final node = OmnixNexusNode(nodeDirectory: 'node-a', transport: fake);
+      await node.startPublicKnowledgeListener(
+        advertisedOrigin: 'https://peer.example',
+        retrievePublic: (_, _) async => OmnixKnowledgeMatch(
+          chunk: OmnixKnowledgeChunk(
+            id: 'secret',
+            documentId: 'secret',
+            content: 'Do not send',
+            source: OmnixKnowledgeSource(id: 'secret', title: 'Secret'),
+          ),
+          score: 0.9,
+        ),
+      );
+      expect(await fake.answer!('ed25519:peer', 'secret'), isEmpty);
+    });
   });
 }

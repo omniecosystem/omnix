@@ -66,9 +66,10 @@ abstract interface class OmnixNexusTransport {
 
 /// Exposes paired public Knowledge operations to an Omnix host.
 ///
-/// This first slice is a caller and identity API, not a listener or remote
-/// action gateway. The host chooses a private [nodeDirectory] outside its
-/// source tree and handles pairing UX and secure network reachability.
+/// This first slice provides paired public-Knowledge calls and a loopback
+/// listener, not a remote-action gateway. The host chooses a private
+/// [nodeDirectory] outside its source tree and handles pairing UX and secure
+/// network reachability.
 final class OmnixNexusNode {
   /// Uses [transport] when supplied, or the bundled native bridge otherwise.
   OmnixNexusNode({required this.nodeDirectory, OmnixNexusTransport? transport})
@@ -88,13 +89,21 @@ final class OmnixNexusNode {
   /// The listener binds to 127.0.0.1; the host must provide a reachable HTTPS
   /// [advertisedOrigin] separately. Only public chunks can enter a response.
   /// Peer grant changes take effect after stopping and restarting the listener.
+  /// A host may supply [retrievePublic] instead of [knowledge] when it needs
+  /// an additional authoritative access check (for example, a document store
+  /// whose visibility can change independently of its vector index).
   Future<OmnixNexusListener> startPublicKnowledgeListener({
     required String advertisedOrigin,
-    required OmnixKnowledgeCoordinator knowledge,
+    OmnixKnowledgeCoordinator? knowledge,
+    Future<OmnixKnowledgeMatch?> Function(String callerId, String question)?
+    retrievePublic,
     int port = 0,
   }) {
     if (port < 0 || port > 65535) {
       throw ArgumentError.value(port, 'port');
+    }
+    if ((knowledge == null) == (retrievePublic == null)) {
+      throw ArgumentError('Provide exactly one public Knowledge source.');
     }
     return _transport.startPublicKnowledgeListener(
       nodeDirectory,
@@ -107,15 +116,23 @@ final class OmnixNexusNode {
           return '';
         }
         try {
-          final matches = await knowledge.retrieve(
-            OmnixKnowledgeQuery(
-              text: question,
-              topK: 1,
-              allowedAccess: {OmnixKnowledgeAccess.public},
-            ),
-          );
-          if (matches.isEmpty) return '';
-          final match = matches.first;
+          final OmnixKnowledgeMatch? match;
+          if (retrievePublic != null) {
+            match = await retrievePublic(verifiedCallerId, question);
+          } else {
+            final matches = await knowledge!.retrieve(
+              OmnixKnowledgeQuery(
+                text: question,
+                topK: 1,
+                allowedAccess: {OmnixKnowledgeAccess.public},
+              ),
+            );
+            match = matches.firstOrNull;
+          }
+          if (match == null ||
+              match.chunk.access != OmnixKnowledgeAccess.public) {
+            return '';
+          }
           return '${match.chunk.content}\nSource: ${match.chunk.source.title}';
         } catch (_) {
           return '';
@@ -152,8 +169,9 @@ final class OmnixNexusNode {
 final class _NativeNexusTransport implements OmnixNexusTransport {
   static Future<void>? _initialization;
 
-  Future<void> _ready() => _initialization ??=
-      RustLib.instance.initialized ? Future<void>.value() : RustLib.init();
+  Future<void> _ready() => _initialization ??= RustLib.instance.initialized
+      ? Future<void>.value()
+      : RustLib.init();
 
   @override
   Future<OmnixNexusListener> startPublicKnowledgeListener(
