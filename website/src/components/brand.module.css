@@ -1,0 +1,7 @@
+.brand { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; white-space: nowrap; font-family: Arial, Helvetica, sans-serif; text-decoration: none; }
+.brand .symbol { display: block; width: 44px; height: 44px; flex: 0 0 44px; }
+.symbol > svg { width: 100%; height: 100%; }
+.brand .lockup { position: relative; display: block; width: max-content; padding-bottom: 14px; line-height: 1; }
+.brand .name { display: block; margin: 0; color: #f5fbff; font-size: 28px; font-weight: 750; letter-spacing: -1.4px; line-height: 1; }
+.brand .tagline { position: absolute; bottom: 0; left: 0; display: block; width: 100%; height: 12px; overflow: visible; fill: #a9bbc4; font-family: Arial, Helvetica, sans-serif; font-size: 12px; letter-spacing: 0; }
+.brand:focus-visible { outline: 2px solid #00ffff; outline-offset: 5px; border-radius: 2px; }

@@ -1,6 +1,6 @@
 # Omnix website
 
-Developer portal for the Omnix on-device intelligence engine.
+Developer portal for the Omnix Rust-first, on-device Cognitive System.
 
 ## Development
 

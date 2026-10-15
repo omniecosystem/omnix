@@ -1,0 +1,22 @@
+.logo { display: block; overflow: visible; }
+.loopTrail { animation: loop-travel 5s linear infinite; }
+.orbitForward, .orbitReverse, .knotOrbit { transform-box: fill-box; transform-origin: center; }
+.orbitForward { transform: rotate(45deg); animation: orbit-forward 9s ease-in-out infinite; }
+.orbitReverse { transform: rotate(-45deg); animation: orbit-reverse 9s ease-in-out infinite; }
+.sparkOrbit { transform-box: view-box; transform-origin: 50% 50%; animation: logo-orbit 24s linear infinite; }
+.sparkFrame { transform-box: view-box; transform-origin: 0 0; animation: logo-orbit 24s linear infinite reverse; }
+.spark { animation: spark-pulse 4.8s ease-in-out infinite; }
+.knotOrbit { animation: logo-orbit 80s linear infinite; }
+.knotUnder { animation: knot-under 5s linear infinite; }
+.knotOver { animation: knot-over 5s linear infinite; }
+@keyframes loop-travel { to { stroke-dashoffset: -100; } }
+@keyframes orbit-forward { 0%,100% { transform: rotate(45deg); opacity: .28; } 50% { transform: rotate(22deg); opacity: .14; } }
+@keyframes orbit-reverse { 0%,100% { transform: rotate(-45deg); opacity: .32; } 50% { transform: rotate(-22deg); opacity: .14; } }
+@keyframes logo-orbit { to { transform: rotate(360deg); } }
+@keyframes spark-pulse { 0%,35%,65%,100% { transform: scale(.72); opacity: .35; filter: none; } 50% { transform: scale(1.28); opacity: 1; filter: drop-shadow(0 0 5px #00ffff); } }
+@keyframes knot-under { from { stroke-dashoffset: 130; } to { stroke-dashoffset: -130; } }
+@keyframes knot-over { from { stroke-dashoffset: -130; } to { stroke-dashoffset: 130; } }
+@media (prefers-reduced-motion: reduce) {
+  .logo * { animation: none !important; }
+  .loopTrail { stroke-dasharray: none; opacity: .75; }
+}
