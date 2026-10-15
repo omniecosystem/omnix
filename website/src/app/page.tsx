@@ -4,9 +4,9 @@ const modules = [
   { index: "01", title: "Core", description: "Select LiteRT-LM or llama.cpp for local inference. Streaming, cancellation, runtime controls and embeddings; multimodal input depends on the model and adapter.", state: "Preview" },
   { index: "02", title: "Agents + capabilities", description: "Rust-owned streaming model/tool loops with host-supplied tools, skills and execution policies. Optional composition in Omnix, not a separate inference runtime.", state: "Preview" },
   { index: "03", title: "Workflow", description: "Durable execution state, step results, retry rules and recovery. Hosts provide triggers and OS scheduling; Android has an example scheduling adapter.", state: "Preview" },
-  { index: "04", title: "Knowledge", description: "Native indexing, embedding profiles, attributed retrieval and a source-grounded answer demonstration.", state: "Preview" },
+  { index: "04", title: "Knowledge", description: "Index local sources, select embedding profiles and retrieve relevant context with source attribution for your model.", state: "Preview" },
   { index: "05", title: "Nexus", description: "Paired A2A communication and authority checks; Matter controller integration remains experimental.", state: "Experimental" },
-  { index: "06", title: "Storage", description: "Independently selected SQLite persistence and Qdrant vector storage with reopen and profile checks.", state: "Preview" },
+  { index: "06", title: "Storage", description: "Persist structured records with SQLite and embedding vectors with Qdrant. Choose either backend independently or use both.", state: "Preview" },
 ];
 
 const quickStart = `import 'package:omnix_core/omnix_core.dart';
@@ -39,7 +39,7 @@ export default function Home() {
             <Link className="button" href="/docs">Start building <span aria-hidden="true">&#8594;</span></Link>
             <a className="button quiet" href="https://github.com/omniecosystem/omnix" target="_blank" rel="noopener noreferrer" title="Opens in a new tab">Explore the source</a>
           </div>
-          <div className="release-note"><span>DEVELOPER PREVIEW</span><p>Now powers OmniAsk. Public APIs and platform coverage are still evolving; adopting Omnix in a product does not make every module production-ready.</p></div>
+          <div className="release-note"><span>DEVELOPER PREVIEW</span><p>Now powers OmniAsk. Explore the same foundation in your own applications. APIs may change during the preview; check compatibility for your runtime and target platform.</p></div>
         </div>
 
         <div className="engine-visual" aria-label="Omnix architecture preview">
@@ -58,7 +58,7 @@ export default function Home() {
       <section className="section shell" id="architecture">
         <div className="section-heading split-heading">
           <div><span className="kicker">THE COGNITIVE SYSTEM</span><h2>Composable capabilities. Explicit boundaries.</h2></div>
-          <p>Rust modules own reusable behavior. Applications choose capabilities and retain their interface, consent and OS integration. Omnix complements an operating system; it does not replace one.</p>
+          <p>Choose the capabilities your application needs, with shared behavior implemented in Rust. Keep your own interface, consent flow and OS integration while Omnix coordinates local models, tools and tasks.</p>
         </div>
         <div className="architecture-flow">
           <article><span>HOST</span><strong>Your app or service</strong><p>Interface, consent, permissions and OS integration.</p></article>
@@ -71,8 +71,8 @@ export default function Home() {
 
       <section className="section shell" id="modules">
         <div className="section-heading">
-          <div><span className="kicker">COMPOSABLE SURFACES</span><h2>Modules shaped by capability, not screens.</h2></div>
-          <Link className="text-link" href="/docs#modules">Read the boundaries <span aria-hidden="true">&#8594;</span></Link>
+          <div><span className="kicker">COMPOSABLE CAPABILITIES</span><h2>Start with one module. Build your system.</h2></div>
+          <Link className="text-link" href="/docs#modules">Explore the modules <span aria-hidden="true">&#8594;</span></Link>
         </div>
         <div className="module-grid">
           {modules.map((module) => (
@@ -96,7 +96,7 @@ export default function Home() {
       <section className="section ecosystem-section">
         <div className="shell ecosystem-panel">
           <div><span className="kicker">PART OF THE OMNI ECOSYSTEM</span><h2>Neutral infrastructure. A shared direction.</h2></div>
-          <p>OmniAsk uses Omnix for its local AI backend. The example application remains a place to test integrations independently. Omnix does not require OmniAsk, an account or a marketplace; standalone Omnix Core provides model execution.</p>
+          <p>OmniAsk uses Omnix for its local AI backend. Try the example application to explore capabilities before integrating them into your own product. You can use Omnix without OmniAsk, an account or a marketplace, or choose standalone Omnix Core for model execution.</p>
           <div className="ecosystem-links"><a href="https://omniecosystem.xyz" target="_blank" rel="noopener noreferrer" title="Opens in a new tab">Visit the ecosystem</a><a href="https://omnies.omniecosystem.xyz" target="_blank" rel="noopener noreferrer" title="Opens in a new tab">Explore Omnies</a></div>
         </div>
       </section>
