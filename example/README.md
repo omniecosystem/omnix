@@ -1,136 +1,83 @@
-# omnix_example
+# Omnix Flutter example
 
-Demonstrates the intended public developer flow:
+This application demonstrates root Omnix sessions, agents and selected native
+modules. It is a host integration, not a second implementation of the engine.
 
-1. Create and initialize a LiteRT-LM-backed `OmnixRuntime`.
-2. Inspect or install a model through `runtime.models`.
-3. Open a conversation and stream thinking and response events.
-4. Stop generation and close owned resources.
+## Build and run
 
-The **Core** tab demonstrates local conversation and model management. The
-model is installed only after the user presses **Install model**. The example
-uses Gemma 4 E2B, which is approximately 2.6 GB.
-
-## Nexus in the Flutter example (Windows)
-
-The **Nexus** tab demonstrates the same public-Knowledge exchange from a
-Flutter UI. It does not need a downloaded chat or embedding model. Sharing is
-off by default and only serves the selected, bundled demo fixture. The
-identity lives in this app's application-support directory, **not** in the
-CLI's `OMNIXUS_NODE_DIR`; exchange and allow the new public keys on both
-devices before testing the UI against the UI.
-
-On both Windows laptops, pull the same Omnix revision, run `flutter pub get`
-from `omnix/example`, and start `flutter run -d windows`. Keep Tailscale Serve
-pointed at `127.0.0.1:46137` on each laptop, as in the CLI test below. Stop
-any CLI or Rust server using that port before pressing **Start sharing**.
-In Nexus, create each device's identity, copy its public key to the other
-device, and press **Allow public Knowledge** for that key. Paste each device's
-own exact `https://...tail...ts.net` origin from `tailscale serve status`,
-choose a different fixture on each device, and press **Start sharing**. Then
-enter the *other* device's origin under **Ask another node** and ask about
-`blue notebook` or `Omnixus` respectively. A `private note` query should
-return an error, never the private fixture entry. Grant changes take effect
-only after stopping and restarting sharing. This is an experimental, paired
-public-data demo, not production identity or private-data sharing.
-
-The device integration test exercises the application runtime and conversation
-ownership contract with a deterministic backend, so automated verification
-does not require network access or a model download.
-
-## Run
-
-The example builds Omnix's Rust Native Asset. Confirm that `rustup` is
-available in the same terminal before invoking Flutter:
-
-```shell
-rustup --version
-flutter run
-```
-
-If Rust was installed while the IDE was open, restart the IDE or terminal so
-its `PATH` includes the Cargo bin directory.
-
-## Local Nexus round trip (Windows)
-
-This exercises the actual Rust A2A listener, signed peer request, and Dart
-Knowledge callback on one computer, without Tailscale or a model download.
-From `omnix/example` in PowerShell:
+From the repository root:
 
 ```powershell
-cargo build --release --manifest-path ..\rust\Cargo.toml
-$env:OMNIX_NATIVE_DLL = (Resolve-Path ..\rust\target\release\omnix.dll).Path
-dart run bin/nexus_loopback.dart
-```
-
-The demonstration creates two temporary identities and a public and private
-chunk. The public answer must cross A2A; the private chunk must not. It removes
-its temporary identity directories when finished. The native DLL is selected
-explicitly because a plain `dart run` does not use Flutter's packaged DLL
-lookup path.
-
-## Two-device Omnix Knowledge round trip (Windows)
-
-This uses `OmnixNexusNode` from Dart on **both** laptops. Each process indexes
-its own JSON fixture into an Omnix Knowledge coordinator, then serves only
-public matches over the bundled Rust A2A listener. It does not run a model,
-use embeddings, expose private documents, or start the Flutter UI.
-
-First push/pull the same Omnix revision to both laptops. Stop the previous
-Rust `two_agents serve` processes: this Dart example uses their port `46137`.
-Keep the existing Tailscale Serve HTTPS route to `127.0.0.1:46137` on each
-laptop. In PowerShell on **each** laptop, from `C:\dev\omni\omnix\example`:
-
-```powershell
+cd example
 flutter pub get
-cargo build --release --manifest-path ..\rust\Cargo.toml
-$env:OMNIX_NATIVE_DLL = (Resolve-Path ..\rust\target\release\omnix.dll).Path
-$env:OMNIXUS_NODE_DIR = Join-Path $env:LOCALAPPDATA "Omnix\nexus-demo-node"
-dart run bin/nexus_device.dart show
+flutter run -d windows
 ```
 
-If `show` reports no identity, run `dart run bin/nexus_device.dart init` once.
-You can reuse the identities and peer grants from the Rust two-laptop test.
-If this is a new pairing, exchange **public** keys only, then on each laptop:
+Native builds require Rust and the target compiler tools. llama.cpp source
+builds also need CMake and a C++ compiler. Model weights are not bundled.
+Use trusted compatible models with appropriate licenses.
 
-```powershell
-dart run bin/nexus_device.dart allow --peer-key "<other-laptop-public-key>"
-```
+Android ARM64 requires API 31 or later for this application's LiteRT-LM
+configuration. Its native archive and optional Matter SDK are separate build
+inputs; see the [Android build guide](../tool/LITERTLM_ANDROID_BUILD.md) and
+[Matter setup](../doc/MATTER_EXAMPLE.md).
 
-On laptop A, start the server in its own terminal, using the **exact** URL
-printed by `tailscale serve status` on A:
+Do not use an installed consumer application's package ID for testing.
+Device deployment requires a deliberate data/signing safety plan; build
+success does not guarantee a data-preserving update.
 
-```powershell
-dart run bin/nexus_device.dart serve --origin "https://<laptop-A-tailnet-name>" --fixture public_knowledge.json
-```
+## Home
 
-On laptop B, also start a server in its own terminal, using B's URL and a
-different public/private fixture:
+Home provides a shared conversation interface with streamed replies and tool
+activity. Model and interaction settings live in Core. History and feature
+panels adapt to the window size; module screens open without becoming
+independent agents.
 
-```powershell
-dart run bin/nexus_device.dart serve --origin "https://<laptop-B-tailnet-name>" --fixture public_knowledge_laptop_b.json
-```
+With a compatible model, Home accepts supported image/audio inputs and
+foreground microphone capture. Capture and playback are host functions;
+native validation, model execution and agent orchestration remain in Omnix.
 
-In a separate client terminal on A, repeat the `OMNIX_NATIVE_DLL` and
-`OMNIXUS_NODE_DIR` assignments above, then ask B:
+Configure tools and autonomy in Core. The example supplies its own tools,
+skills and policy; registering them does not make them engine defaults.
 
-```powershell
-dart run bin/nexus_device.dart ask --origin "https://<laptop-B-tailnet-name>" --question "blue notebook"
-dart run bin/nexus_device.dart ask --origin "https://<laptop-B-tailnet-name>" --question "private note"
-```
+## Features
 
-The first answer must mention laptop B's blue notebook. The private-note
-request must fail without returning its contents. On B, repeat the DLL and
-node-directory assignments, then ask A:
+- Core: import or download a trusted model, choose runtime settings and use it
+  for Home. Native installation verifies artifact metadata; OS-backed transfer
+  remains a host adapter.
+- Knowledge: configure an embedding model and index supported content. Home
+  can access the registered index; retrieved sources are evidence, not a
+  guarantee of every generated claim.
+- Storage: inspect persistence behavior independently of model inference.
+- Workflow: inspect durable jobs, saved results and recovery. Host callbacks
+  implement device effects; an uncertain effect may require reconciliation.
+- Nexus: exercise authenticated peer exchanges and experimental Matter adapters.
+  Fixtures and test credentials are not production device provisioning.
 
-```powershell
-dart run bin/nexus_device.dart ask --origin "https://<laptop-A-tailnet-name>" --question "Omnixus"
-dart run bin/nexus_device.dart ask --origin "https://<laptop-A-tailnet-name>" --question "private note"
-```
+The default embedding selection is EmbeddingGemma 2. Different encoder profiles
+require compatible stores; do not reopen old vectors under unrelated weights.
 
-The public answer should come from A's fixture; the private query must fail.
-Stop either server with Ctrl+C, restart it with the same fixture and origin,
-and repeat a query to check reload behavior. The fixture is indexed in memory
-at every start; this example is not a durable Knowledge store. The paired-key
-identity and grants persist in the node directory. Do not put sensitive data
-in these fixtures or use this experimental pairing for private data/actions.
+## Persistence and lifecycle
+
+Visible transcripts and native checkpoints have different roles.
+Restoration must not execute historical tools. Saved context is sensitive;
+keep application stores private and handle compatibility errors explicitly.
+
+Runtime preparation, cancellation and conversation switching need native
+ownership to settle before another operation. The UI may retain a draft while
+waiting. An external action already accepted cannot be rolled back merely by
+stopping generation.
+
+## Validation
+
+Unit/widget tests use doubles where appropriate. Native integration tests
+require matching bridge artifacts and compatible existing models.
+A skipped native test is not a passing qualification.
+
+Use disposable stores and isolated app IDs. Do not uninstall a consumer app or
+clear downloaded models to make an integration test pass.
+
+See [architecture](../doc/EXAMPLE_ARCHITECTURE.md),
+[model installation](../doc/MODEL_INSTALLATION.md),
+[integration validation](../doc/MIGRATION_QUALIFICATION.md), and
+[feature scope](../doc/EXAMPLE_FEATURE_PARITY.md).

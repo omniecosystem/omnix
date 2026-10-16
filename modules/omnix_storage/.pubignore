@@ -1,0 +1,7 @@
+/.dart_tool/
+/build/
+/pubspec.lock
+/rust/target/
+/example/.dart_tool/
+/example/build/
+/example/android/local.properties

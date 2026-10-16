@@ -1,10 +1,31 @@
+# Changelog
+
 ## Unreleased
 
-- Add an experimental native Nexus caller for paired public-Knowledge A2A
-  requests, with identity and peer-grant operations through the Rust bridge.
-- Add a loopback A2A listener bridged to Dart Knowledge retrieval; only public
-  chunks can be returned after paired-peer verification. Include a loopback
-  example and tests. Product lifecycle integration remains opt-in.
+- Replace plugin-backed execution with independently usable Rust Core,
+  Storage, Knowledge, Nexus and Workflow modules.
+- Add root Rust composition with a headless Dart session/agent API.
+- Integrate explicitly selected LiteRT-LM and llama.cpp native C interfaces.
+- Add streaming, cancellation, logical conversation isolation, history/checkpoint
+  restoration and supported runtime controls.
+- Add host-supplied tools, skill instructions, policy enforcement and execution
+  outcome events.
+- Add SQLite snapshots/workflow journals and profile-bound Qdrant retrieval.
+- Add native embedding execution and supported mixed text/image/audio inputs.
+- Add verified model installation with host-managed OS transfer adapters.
+- Add Android ARM64 and Windows native delivery configurations.
+- Add experimental Matter host adapters and authenticated A2A exchanges.
+- Reorganize the Flutter example around a shared Home and module features.
+- Retire the legacy reference application and obsolete aggregate Dart adapters.
+- Refresh developer documentation and publication exclusions.
+
+APIs and storage formats remain a developer preview. Runtime and target
+coverage varies; see the project README and module documentation.
+
+## Historical development checkpoints
+
+The entries below describe earlier implementations, including retired APIs.
+They are not the current integration guide.
 
 ## 0.1.0-dev.3
 

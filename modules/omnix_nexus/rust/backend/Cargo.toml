@@ -1,0 +1,48 @@
+[package]
+name = "omnix-nexus"
+version = "0.1.0-dev.3"
+edition = "2021"
+license = "Apache-2.0"
+description = "Omnix native identity and protocol integrations"
+publish = false
+
+[features]
+default = []
+matter-host = []
+matter-process = ["matter-host", "dep:serde", "dep:serde_json"]
+matter = ["experimental-matter"]
+matter-cpp = ["dep:libloading"]
+a2a = ["dep:tokio", "dep:futures", "dep:axum", "dep:a2a", "dep:a2a-server", "dep:a2a-client", "dep:hex", "dep:subtle", "dep:base64", "dep:ed25519-dalek", "dep:rand", "dep:serde", "dep:serde_json", "dep:reqwest", "dep:url"]
+experimental-matter = ["dep:serde", "dep:serde_json", "dep:tokio", "dep:rs-matter", "dep:async-io", "dep:async-channel", "dep:socket2", "dep:if-addrs", "dep:futures-lite", "dep:embassy-time", "dep:rand-matter", "dep:log", "dep:embassy-time-queue-utils"]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+libloading = { version = "=0.8.9", optional = true }
+tokio = { version = "1", features = ["net", "rt", "sync", "time"], optional = true }
+futures = { version = "0.3", optional = true }
+axum = { version = "0.8", optional = true }
+a2a = { package = "a2a-lf", version = "=0.3.1", optional = true }
+a2a-server = { package = "a2a-server-lf", version = "=0.4.4", default-features = false, optional = true }
+a2a-client = { package = "a2a-client-lf", version = "=0.2.5", optional = true }
+hex = { version = "0.4", optional = true }
+subtle = { version = "2", optional = true }
+base64 = { version = "0.22", optional = true }
+ed25519-dalek = { version = "2", optional = true }
+rand = { version = "0.8", optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"], optional = true }
+url = { version = "2", optional = true }
+rs-matter = { git = "https://github.com/project-chip/rs-matter", rev = "74fff78b1bf9297e783da2319e7f6a66321ad627", default-features = false, features = ["os", "rustcrypto"], optional = true }
+async-io = { version = "2", optional = true }
+async-channel = { version = "2", optional = true }
+socket2 = { version = "0.6", features = ["all"], optional = true }
+if-addrs = { version = "0.15", optional = true }
+futures-lite = { version = "2", optional = true }
+embassy-time = { version = "0.5", features = ["std"], optional = true }
+rand-matter = { package = "rand", version = "0.10", optional = true }
+log = { version = "0.4", optional = true }
+embassy-time-queue-utils = { version = "0.3", features = ["generic-queue-64"], optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }

@@ -3,9 +3,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:omnix/omnix.dart';
-import 'package:omnix_example/nexus_example_screen.dart';
-import 'package:omnix_example/nexus_panel_view.dart';
+import 'package:omnix_nexus/omnix_nexus.dart';
+import 'package:omnix_example/features/nexus/presentation/pages/nexus_example_screen.dart';
+import 'package:omnix_example/features/nexus/presentation/widgets/nexus_panel_view.dart';
 
 class _FakeGateway implements NexusExampleGateway {
   String? identity;
@@ -67,10 +67,12 @@ Future<void> _visible(WidgetTester tester, String key) async {
     await tester.scrollUntilVisible(
       target,
       280,
-      scrollable: find.descendant(
-        of: find.byType(NexusPanelView),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(NexusPanelView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
   } else {
     await tester.ensureVisible(target);

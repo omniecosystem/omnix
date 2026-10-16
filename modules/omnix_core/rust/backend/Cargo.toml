@@ -1,0 +1,56 @@
+[package]
+name = "omnix-core"
+version = "0.1.0-dev.3"
+edition = "2021"
+license = "Apache-2.0"
+description = "Omnix native inference provider selection and lifecycle boundary"
+publish = false
+
+[features]
+default = []
+history = ["dep:serde_json", "dep:base64"]
+model-installation = ["dep:reqwest", "dep:sha2", "dep:serde_json", "dep:tokio", "dep:rustls", "dep:webpki-roots"]
+tools = ["dep:serde_json"]
+litertlm = ["tools", "history", "dep:libloading", "dep:serde_json", "dep:sha2", "dep:reqwest", "dep:windows-sys", "dep:base64"]
+llamacpp = ["history", "dep:cmake"]
+litertlm-embeddings = ["litertlm", "dep:sentencepiece"]
+litertlm-embedding-engine = ["litertlm"]
+
+[dependencies]
+base64 = { version = "0.22", optional = true }
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs", "std", "tls12"], optional = true }
+webpki-roots = { version = "1", optional = true }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls"], optional = true }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt", "time", "macros"], optional = true }
+libloading = { version = "0.8.9", optional = true }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.10.9", optional = true }
+sentencepiece = { version = "=0.14.0", features = ["static"], optional = true }
+
+[build-dependencies]
+cmake = { version = "=0.1.58", optional = true }
+sha2 = { version = "0.10.9", optional = true }
+reqwest = { version = "0.13.5", default-features = false, features = ["blocking", "rustls"], optional = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_System_LibraryLoader"], optional = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+libc = "0.2"
+
+[[example]]
+name = "gguf_chat"
+required-features = ["llamacpp"]
+
+[[example]]
+name = "litertlm_chat"
+required-features = ["litertlm"]
+
+[[example]]
+name = "litert_embedding"
+required-features = ["litertlm-embeddings"]
+
+[[example]]
+name = "embeddinggemma2"
+required-features = ["litertlm-embedding-engine"]

@@ -1,0 +1,33 @@
+def omnixRoot = new File(rootDir, '../../..').canonicalFile
+def sdkDirectory = new File(omnixRoot, 'modules/omnix_nexus/android')
+apply from: new File(sdkDirectory, 'matter_sdk.gradle')
+
+tasks.register('verifyResolver') {
+    doLast {
+        def artifact = new File(omnixRoot, '.local-native/matter/android-arm64/omnix-matter-android-arm64.aar')
+        def manifest = new File(sdkDirectory, 'matter-sdk.json')
+        def options = [manifest: manifest, localAar: artifact,
+            cacheDir: new File(layout.buildDirectory.get().asFile, 'resolver-cache')]
+        assert omnixResolveMatterSdk(options) == artifact
+        assert omnixResolveMatterSdk(options + [override: artifact.absolutePath]) == artifact
+        assert omnixMatterRuntimeDependencies(manifest).size() == 5
+        def expectFailure = { Map testOptions, String message ->
+            try {
+                omnixResolveMatterSdk(testOptions)
+                throw new AssertionError('Resolver unexpectedly accepted invalid configuration')
+            } catch (GradleException failure) {
+                assert failure.message.contains(message)
+            }
+        }
+        def missing = new File(layout.buildDirectory.get().asFile, 'absent.aar')
+        expectFailure(options + [override: missing.absolutePath], 'does not exist')
+        expectFailure(options + [localAar: missing], 'No published Matter SDK')
+        expectFailure(options + [localAar: missing, downloadUrl: 'http://example.invalid/sdk.aar'], 'HTTPS')
+        expectFailure(options + [localAar: missing, downloadUrl: 'https://user:secret@example.invalid/sdk.aar'], 'HTTPS')
+        def bad = new File(layout.buildDirectory.get().asFile, 'invalid.aar')
+        bad.parentFile.mkdirs()
+        bad.text = 'not a trusted SDK'
+        expectFailure(options + [override: bad.absolutePath], 'checksum mismatch')
+        println 'Matter resolver: local/offline, override, pins, missing-artifact and URL admission checks passed. No network requests.'
+    }
+}

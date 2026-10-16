@@ -1,0 +1,14 @@
+{
+  "artifact": "omnix-matter-android-arm64.aar",
+  "sha256": "12b18fbcc1bf3cffe4fc68d77335b324e388fb448d393f7fa37ae636724bd8a9",
+  "sourceRevision": "0fa0eb338e20dad90b269149581c693a970a03cc",
+  "releaseUrl": null,
+  "qualification": "android-arm64-software-light-only",
+  "runtimeDependencies": [
+    "com.google.code.gson:gson:2.9.1",
+    "com.google.protobuf:protobuf-java:3.22.0",
+    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3",
+    "com.google.code.findbugs:jsr305:3.0.2",
+    "androidx.annotation:annotation:1.1.0"
+  ]
+}

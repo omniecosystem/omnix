@@ -1,4 +1,6 @@
 rust_input: crate::api
 rust_root: rust/
+rust_features:
+  - flutter-bridge
 dart_output: lib/src/rust
 stop_on_error: true

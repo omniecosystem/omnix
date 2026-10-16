@@ -4,9 +4,18 @@
 /build/
 /coverage/
 /pubspec.lock
+/OMNIX_VISION.md
+/OMNI_VISION.md
+/tool/
 
 # Generated native state
 /rust/target/
+/modules/**/rust/target/
+/modules/**/target/
+/modules/**/.dart_tool/
+/modules/**/build/
+/modules/**/pubspec.lock
+/modules/**/android/local.properties
 
 # Example application generated state
 /example/.dart_tool/

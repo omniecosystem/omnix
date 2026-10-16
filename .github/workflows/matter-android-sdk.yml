@@ -1,0 +1,44 @@
+# Copyright 2026 The Omnix Authors
+# SPDX-License-Identifier: Apache-2.0
+name: Matter Android source artifact (qualification)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-controller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install maintainer build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build generate-ninja openjdk-17-jdk-headless python3-venv python3-dev pkg-config libssl-dev libdbus-1-dev libglib2.0-dev libavahi-client-dev clang
+          sdkmanager 'platforms;android-34' 'ndk;28.2.13676358'
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/kotlin.zip" https://github.com/JetBrains/kotlin/releases/download/v2.1.10/kotlin-compiler-2.1.10.zip
+          echo 'c6e9e2636889828e19c8811d5ab890862538c89dc2a3101956dfee3c2a8ba6b1  '"$RUNNER_TEMP/kotlin.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/kotlin.zip" -d "$RUNNER_TEMP/kotlin"
+      - name: Checkout pinned official SDK
+        run: |
+          git init "$RUNNER_TEMP/matter-sdk"
+          git -C "$RUNNER_TEMP/matter-sdk" remote add origin https://github.com/project-chip/connectedhomeip.git
+          git -C "$RUNNER_TEMP/matter-sdk" fetch --depth 1 origin 0fa0eb338e20dad90b269149581c693a970a03cc
+          git -C "$RUNNER_TEMP/matter-sdk" checkout --detach FETCH_HEAD
+      - name: Package tests
+        working-directory: tool/matter_android_sdk
+        run: python3 -m unittest -v test_package
+      - name: Build official libraries and package AAR
+        run: |
+          export OMNIX_MATTER_SOURCE="$RUNNER_TEMP/matter-sdk"
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          export PATH="$RUNNER_TEMP/kotlin/kotlinc/bin:$JAVA_HOME/bin:$PATH"
+          export OMNIX_MATTER_OUTPUT="$GITHUB_WORKSPACE/build/matter-android-sdk"
+          bash tool/matter_android_sdk/build.sh
+      # CI artifact only, not a public SDK release. No publishing credentials.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unqualified-matter-android-arm64
+          path: build/matter-android-sdk/
+          if-no-files-found: error

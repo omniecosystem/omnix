@@ -1,46 +1,35 @@
-# Node authentication and authorization
+# Node identity and authorized retrieval
 
-Omnix defines a node boundary without selecting a network topology, identity
-provider, or wire protocol. An application may begin with a server-mediated
-identity service and later adopt direct peer authentication without changing
-Knowledge retrieval contracts.
+Nexus separates identity from permission. An authenticated peer is not
+automatically entitled to private Knowledge or device actions.
 
-## Authentication boundary
+## Host and protocol boundaries
 
-`OmnixNodeAuthenticationEvidence` carries an opaque scheme and byte payload.
-Omnix does not interpret or persist that payload. An application supplies an
-`OmnixNodeAuthenticator` that verifies it and returns an
-`OmnixNodePrincipal`.
+Applications select their endpoint exposure and routing.
+Nexus A2A can use paired identities and peer grants without requiring a
+particular account provider or route service.
 
-Possible adapters include:
+A private HTTPS route is deployment infrastructure, not automatic NAT traversal.
+A native listener cannot be assumed available inside a browser.
 
-- a Supabase access token validated locally or by a trusted server;
-- a relay-issued session credential;
-- a signed nonce verified against a peer public key;
-- a mutually authenticated transport mapped to a node identity.
+## Source visibility
 
-Authentication proves identity. It does not by itself grant access.
+Remote retrieval must apply current authoritative visibility and grant checks.
+A public source is eligible under the host's sharing policy, not necessarily
+anonymous internet data.
 
-## Knowledge authorization
+Recheck revocation rather than trust stale index metadata.
+Returning a source does not grant the peer arbitrary action authority.
 
-`OmnixNodeKnowledgeAuthorizer` receives the verified principal, semantic query,
-and request context. It either denies the operation or returns an explicit
-grant containing:
+## Identity storage
 
-- permitted access labels;
-- maximum result count;
-- minimum similarity floor.
+Keep private keys and grant stores in host-owned private locations.
+Exchange public keys only. Do not clone node identity directories between
+devices or treat test tokens as production pairing.
 
-`OmnixNodeKnowledgeService` intersects the request with that grant before
-retrieval. It rejects expired principals and empty access intersections without
-touching the Knowledge backend. Private knowledge therefore cannot become
-remotely available merely because a caller requested it.
+Persistence, replay defenses, listener lifetime and transport authentication
+need explicit integration tests; a signed loopback pass is not every network's
+security or availability guarantee.
 
-## Deliberate omissions
-
-The core package does not yet prescribe discovery, routing, relays, public-key
-formats, token validation, revocation, replay prevention, rate-limit storage,
-or encrypted transport. Those concerns belong to replaceable adapters and the
-future Omnixus protocol. Request identifiers, timestamps, and attributes are
-available so adapters can enforce replay and resource policies without leaking
-their implementation into the engine.
+See the [Nexus module](../modules/omnix_nexus/README.md) and
+[A2A demonstration](NEXUS_A2A_DEMO.md).

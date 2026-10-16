@@ -1,0 +1,5 @@
+[toolchain]
+channel = "1.98.1"
+profile = "minimal"
+# Android is an artifact/build candidate until on-device execution passes.
+targets = ["x86_64-pc-windows-msvc", "aarch64-linux-android"]

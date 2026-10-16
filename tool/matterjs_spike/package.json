@@ -1,0 +1,17 @@
+{
+  "name": "omnix-matterjs-controller-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node controller.mjs",
+    "test:control": "node controller.mjs --control"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.20.0",
+  "dependencies": {
+    "@matter/main": "0.17.9",
+    "@project-chip/matter.js": "0.17.9"
+  }
+}

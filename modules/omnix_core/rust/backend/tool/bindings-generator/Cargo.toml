@@ -1,0 +1,12 @@
+[package]
+name = "omnix-core-bindings-generator"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Maintainer-only tooling, not a dependency of Core or the aggregate workspace.
+[workspace]
+
+[dependencies]
+bindgen = "=0.72.1"
+sha2 = "=0.10.9"

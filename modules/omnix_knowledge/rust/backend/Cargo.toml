@@ -1,0 +1,24 @@
+[package]
+name = "omnix-knowledge"
+version = "0.1.0-dev.3"
+edition = "2021"
+license = "Apache-2.0"
+description = "Omnix document indexing and retrieval orchestration"
+publish = false
+
+[dependencies]
+omnix-storage = { path = "../../../omnix_storage/rust/backend", default-features = false, features = ["qdrant"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+sha2 = { version = "0.10", optional = true }
+omnix-core = { path = "../../../omnix_core/rust/backend", default-features = false, optional = true }
+
+[features]
+default = []
+core-adapter = ["dep:omnix-core"]
+qdrant = ["dep:omnix-storage", "dep:serde", "dep:serde_json", "dep:sha2"]
+core-litertlm-embeddings = ["core-adapter", "omnix-core/litertlm-embeddings"]
+core-litertlm-embedding-engine = ["core-adapter", "omnix-core/litertlm-embedding-engine"]
+
+[dev-dependencies]
+tempfile = "3"

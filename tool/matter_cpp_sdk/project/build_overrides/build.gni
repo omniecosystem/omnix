@@ -1,0 +1,5 @@
+# Copyright 2026 The Omnix Authors
+# SPDX-License-Identifier: Apache-2.0
+declare_args() {
+  build_root = "//third_party/connectedhomeip/build"
+}

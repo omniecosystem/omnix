@@ -13,10 +13,10 @@ jobs:
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
+      - run: dart pub get
       - run: dart format --output=none --set-exit-if-changed lib test example/lib example/integration_test hook
-      - run: flutter analyze
-      - run: flutter test
+      - run: dart analyze lib test hook
+      - run: dart test
 
   rust:
     runs-on: ubuntu-latest
@@ -24,7 +24,112 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.93.1
+          toolchain: 1.98.1
           components: rustfmt, clippy
       - run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+      - name: Check independent Knowledge contracts (no model or database downloads)
+        run: |
+          cargo fmt --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml -- --check
+          cargo clippy --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml --all-targets -- -D warnings
+          cargo test --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml
+      - name: Check lean foundation and independent Rust module composition
+        shell: pwsh
+        run: ./tool/test_module_composition.ps1
       - run: cargo clippy --manifest-path rust/Cargo.toml --all-targets -- -D warnings
+      - run: cargo clippy --manifest-path rust/Cargo.toml --all-targets --features core-litertlm,nexus,storage,flutter-bridge -- -D warnings
+      - run: cargo test --manifest-path rust/Cargo.toml --workspace --features core-litertlm,nexus,storage,flutter-bridge
+
+  workflow-native:
+    runs-on: windows-latest
+    env:
+      OMNIX_CORE_LITERTLM_HOST_PACKAGING: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
+          components: rustfmt, clippy
+      - run: dart pub get
+      - run: cargo test --manifest-path modules/omnix_workflow/rust/backend/Cargo.toml
+      - run: cargo test --manifest-path modules/omnix_storage/rust/backend/Cargo.toml --no-default-features --features sqlite
+      - run: cargo clippy --manifest-path rust/Cargo.toml --lib --no-default-features --features core-litertlm,workflow-local,flutter-bridge -- -D warnings
+      - run: cargo test --manifest-path rust/Cargo.toml --lib --no-default-features --features core-litertlm,workflow-local,flutter-bridge
+      - run: cargo build --manifest-path rust/Cargo.toml --no-default-features --features core-litertlm,workflow-local,flutter-bridge
+      - name: Qualify the real Dart callback bridge without downloading a model
+        shell: pwsh
+        run: |
+          $env:OMNIX_WORKFLOW_NATIVE_TEST_DLL = (Resolve-Path rust/target/debug/omnix.dll).Path
+          dart test test/workflow_test.dart test/workflow_native_test.dart test/agent_extensions_test.dart
+
+  knowledge-qdrant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
+          components: rustfmt, clippy
+      - run: cargo fmt --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml -- --check
+      - run: cargo clippy --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml --all-targets --features qdrant -- -D warnings
+      - run: cargo test --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml --features qdrant
+      - name: Check opt-in Core and Knowledge composition without downloading models
+        run: |
+          cargo clippy --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml --all-targets --features qdrant,core-litertlm-embeddings -- -D warnings
+          cargo test --manifest-path modules/omnix_knowledge/rust/backend/Cargo.toml --features qdrant,core-litertlm-embeddings
+
+  modules:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [omnix_core, omnix_storage, omnix_nexus]
+    defaults:
+      run:
+        working-directory: modules/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.module == 'omnix_storage' && '1.98.1' || '1.93.1' }}
+          components: rustfmt, clippy
+      - run: flutter pub get
+      - name: Prepare the optional Core C++ source build
+        if: matrix.module == 'omnix_core'
+        run: sudo apt-get update && sudo apt-get install -y cmake
+      - run: flutter analyze
+      - run: dart format --output=none --set-exit-if-changed lib test hook example/lib example/test example/integration_test example/test_driver
+      - run: cargo fmt --manifest-path rust/Cargo.toml --all -- --check
+      - run: cargo clippy --manifest-path rust/Cargo.toml --workspace --all-targets --features ${{ matrix.module == 'omnix_core' && 'litertlm' || matrix.module == 'omnix_nexus' && 'a2a' || 'sqlite' }} -- -D warnings
+      - run: cargo test --manifest-path rust/Cargo.toml --workspace --features ${{ matrix.module == 'omnix_core' && 'litertlm' || matrix.module == 'omnix_nexus' && 'a2a' || 'sqlite' }}
+      - name: Check the optional GGUF provider without downloading models
+        if: matrix.module == 'omnix_core'
+        run: |
+          cargo clippy --manifest-path rust/Cargo.toml --workspace --all-targets --features llamacpp -- -D warnings
+          cargo test --manifest-path rust/Cargo.toml --workspace --features llamacpp
+      - name: Reject an engine-less Core build
+        if: matrix.module == 'omnix_core'
+        run: |
+          if cargo check --manifest-path rust/Cargo.toml --no-default-features; then
+            echo 'Core unexpectedly compiled without a runtime selection'
+            exit 1
+          fi
+      - name: Check independent native embedding contracts without a model
+        if: matrix.module == 'omnix_core'
+        run: |
+          cargo clippy --manifest-path rust/Cargo.toml -p omnix-core --all-targets --features litertlm-embeddings -- -D warnings
+          cargo test --manifest-path rust/Cargo.toml -p omnix-core --features litertlm-embeddings
+      - name: Prepare native libraries for the standalone Dart test runner
+        run: cargo build --release --manifest-path rust/Cargo.toml --features ${{ matrix.module == 'omnix_core' && 'litertlm' || matrix.module == 'omnix_nexus' && 'a2a' || 'sqlite' }}
+      - run: flutter pub get
+        working-directory: modules/${{ matrix.module }}/example
+      - run: dart test ../test
+        working-directory: modules/${{ matrix.module }}/example
+      - run: flutter test
+        working-directory: modules/${{ matrix.module }}/example

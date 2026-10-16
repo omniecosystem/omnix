@@ -1,0 +1,39 @@
+[package]
+name = "omnix_nexus_bridge"
+version = "0.1.0-dev.3"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[workspace]
+members = ["backend"]
+resolver = "2"
+
+[features]
+default = []
+a2a = ["omnix-nexus/a2a", "dep:futures", "dep:axum"]
+matter = ["experimental-matter"]
+experimental-matter = ["omnix-nexus/experimental-matter"]
+matter-process = ["omnix-nexus/matter-process"]
+matter-android = ["omnix-nexus/matter-host", "dep:jni"]
+
+[dependencies]
+flutter_rust_bridge = "=2.13.0"
+omnix-nexus = { path = "backend", default-features = false }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1", features = ["net", "rt", "sync", "time"] }
+futures = { version = "0.3", optional = true }
+axum = { version = "0.8", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = { version = "=0.21.1", optional = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

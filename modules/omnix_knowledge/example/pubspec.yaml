@@ -1,0 +1,36 @@
+name: omnix_knowledge_example
+description: Native Core embeddings, Qdrant Knowledge persistence and grounded generation.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  omnix_core:
+    path: ../../omnix_core
+  omnix_knowledge:
+    path: ../
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  test: ^1.26.0
+  integration_test:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+hooks:
+  user_defines:
+    omnix_core:
+      runtimes: [litertlm, llamacpp]
+      embeddings: true
+    omnix_knowledge:
+      stores: [qdrant]

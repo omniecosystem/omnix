@@ -1,0 +1,5 @@
+{
+  "goal": "Read UTC time and format the saved reading on a simulated tick",
+  "triggerJson": "{\"source\":\"simulation\",\"kind\":\"tick\",\"match\":{}}",
+  "planJson": "[{\"id\":\"read\",\"executor\":\"host_time\",\"input\":{}},{\"id\":\"format\",\"executor\":\"host_format_utc\",\"input\":{},\"outputBindings\":{\"utc\":{\"step\":\"read\",\"pointer\":\"/utc\"}}}]"
+}

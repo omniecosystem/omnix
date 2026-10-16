@@ -3,16 +3,9 @@
 //! Intentionally bound to loopback. The default mode uses a copied demo token;
 //! the opt-in paired-key mode pins peer keys for public Knowledge only. Neither
 //! mode implements production pairing or transport. Answers are public demo
-//! data, optionally served through Omnix Knowledge.
+//! data. The native Flutter example demonstrates actual Knowledge integration.
 
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Write},
-    path::PathBuf,
-    process::{Child, ChildStdin, ChildStdout, Command, Stdio},
-    sync::{mpsc, Arc, Mutex},
-    time::Duration,
-};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use a2a::{
     AgentCapabilities, AgentCard, AgentInterface, AgentSkill, HttpAuthSecurityScheme, Message,
@@ -62,184 +55,6 @@ impl CallerVerifier for ExampleAuth {
             Self::Demo(auth) => auth.verify(params),
             Self::Paired(auth) => auth.verify(params),
         }
-    }
-}
-
-struct OmnixPublicKnowledge {
-    bridge: Mutex<Option<DartBridge>>,
-    example_dir: PathBuf,
-    dart_executable: PathBuf,
-}
-
-struct DartBridge {
-    child: Arc<Mutex<Child>>,
-    input: ChildStdin,
-    output: BufReader<ChildStdout>,
-    next_id: u64,
-}
-
-struct KillTimer(mpsc::Sender<()>);
-
-impl KillTimer {
-    fn start(child: Arc<Mutex<Child>>, duration: Duration) -> Self {
-        let (cancel, receiver) = mpsc::channel();
-        std::thread::spawn(move || {
-            if receiver.recv_timeout(duration).is_err() {
-                if let Ok(mut child) = child.lock() {
-                    let _ = child.kill();
-                }
-            }
-        });
-        Self(cancel)
-    }
-}
-
-impl Drop for KillTimer {
-    fn drop(&mut self) {
-        let _ = self.0.send(());
-    }
-}
-
-impl DartBridge {
-    fn start(
-        example_dir: &PathBuf,
-        dart_executable: &PathBuf,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        // Keep one Dart process and one Omnix Knowledge service alive for the
-        // entire A2A server lifetime. No shell sees the remote question.
-        let mut child = Command::new(dart_executable)
-            .args(["run", "bin/public_knowledge_node.dart", "--serve"])
-            .current_dir(example_dir)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()?;
-        let input = child.stdin.take().ok_or("Dart stdin unavailable")?;
-        let output = BufReader::new(child.stdout.take().ok_or("Dart stdout unavailable")?);
-        let mut bridge = Self {
-            child: Arc::new(Mutex::new(child)),
-            input,
-            output,
-            next_id: 1,
-        };
-        // A fresh SDK can spend minutes on native build hooks, but startup
-        // must still have a finite bound.
-        let _timer = KillTimer::start(Arc::clone(&bridge.child), Duration::from_secs(300));
-        let mut ready = false;
-        for _ in 0..128 {
-            let mut line = String::new();
-            if bridge.output.read_line(&mut line)? == 0 {
-                break;
-            }
-            if line.trim() == "OMNIXUS_DEMO_READY_V1" {
-                ready = true;
-                break;
-            }
-        }
-        if !ready {
-            return Err("Omnix demo process did not become ready".into());
-        }
-        Ok(bridge)
-    }
-
-    fn ask(&mut self, caller: &str, question: &str) -> Result<String, String> {
-        let _timer = KillTimer::start(Arc::clone(&self.child), Duration::from_secs(15));
-        let id = self.next_id;
-        self.next_id = self.next_id.wrapping_add(1);
-        let request = serde_json::json!({"id": id, "caller": caller, "question": question});
-        writeln!(self.input, "{request}")
-            .and_then(|()| self.input.flush())
-            .map_err(|_| "Omnix demo process is unavailable".to_string())?;
-        for _ in 0..16 {
-            let mut line = String::new();
-            if self
-                .output
-                .read_line(&mut line)
-                .map_err(|_| "Omnix response unavailable")?
-                == 0
-            {
-                return Err("Omnix demo process exited".into());
-            }
-            let Some(payload) = line.trim().strip_prefix("OMNIXUS_DEMO_RESULT_V1 ") else {
-                continue;
-            };
-            let response: serde_json::Value =
-                serde_json::from_str(payload).map_err(|_| "Omnix returned invalid JSON")?;
-            if response["id"].as_u64() != Some(id) {
-                return Err("Omnix returned an unrelated answer".into());
-            }
-            if response["status"] != "ok" {
-                return Err("resource not available to this caller".into());
-            }
-            let answer = response["answer"]
-                .as_str()
-                .ok_or("Omnix returned invalid text")?;
-            if answer.trim().is_empty() || answer.len() > 4096 {
-                return Err("Omnix returned an invalid answer".into());
-            }
-            return Ok(answer.to_string());
-        }
-        Err("Omnix answer marker missing".into())
-    }
-}
-
-impl Drop for DartBridge {
-    fn drop(&mut self) {
-        if let Ok(mut child) = self.child.lock() {
-            let _ = child.kill();
-            let _ = child.wait();
-        }
-    }
-}
-
-impl KnowledgeSource for OmnixPublicKnowledge {
-    fn answer(&self, caller: &VerifiedCaller, question: &str) -> Result<String, String> {
-        if question.len() > 512 {
-            return Err("question is too long for this demo".into());
-        }
-        println!("Omnix Knowledge query from {}: {question}", caller.id());
-        let mut bridge = self
-            .bridge
-            .lock()
-            .map_err(|_| "Omnix bridge unavailable".to_string())?;
-        if bridge.is_none() {
-            *bridge = Some(
-                DartBridge::start(&self.example_dir, &self.dart_executable)
-                    .map_err(|_| "Omnix bridge could not restart".to_string())?,
-            );
-        }
-        let result = bridge
-            .as_mut()
-            .ok_or_else(|| "Omnix bridge unavailable".to_string())?
-            .ask(caller.id(), question);
-        if result
-            .as_ref()
-            .is_err_and(|error| error != "resource not available to this caller")
-        {
-            *bridge = None;
-        }
-        result
-    }
-}
-
-fn dart_executable() -> Result<PathBuf, &'static str> {
-    if cfg!(windows) {
-        let path = std::env::var_os("PATH").ok_or("PATH is missing")?;
-        for directory in std::env::split_paths(&path) {
-            let direct = directory.join("dart.exe");
-            if direct.is_file() {
-                return Ok(direct);
-            }
-            if directory.join("dart.bat").is_file() {
-                let sdk = directory.join("cache/dart-sdk/bin/dart.exe");
-                if sdk.is_file() {
-                    return Ok(sdk);
-                }
-            }
-        }
-        Err("Dart SDK executable not found on PATH")
-    } else {
-        Ok(PathBuf::from("dart"))
     }
 }
 
@@ -375,30 +190,8 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
             Some(token),
         )
     };
-    let source: Box<dyn KnowledgeSource> =
-        if let Ok(example_dir) = std::env::var("OMNIXUS_DEMO_OMNIX_EXAMPLE") {
-            let example_dir = PathBuf::from(example_dir);
-            if !example_dir.join("bin/public_knowledge_node.dart").is_file()
-                || !example_dir.join("public_knowledge.json").is_file()
-            {
-                return Err(
-                    "OMNIXUS_DEMO_OMNIX_EXAMPLE must point to the Omnix example directory".into(),
-                );
-            }
-            println!(
-                "Using public Omnix Knowledge from {}",
-                example_dir.display()
-            );
-            let bridge = DartBridge::start(&example_dir, &dart_executable()?)?;
-            Box::new(OmnixPublicKnowledge {
-                bridge: Mutex::new(Some(bridge)),
-                example_dir,
-                dart_executable: dart_executable()?,
-            })
-        } else {
-            println!("Using static public demonstration answers");
-            Box::new(PublicKnowledge)
-        };
+    println!("Using static public demonstration answers");
+    let source: Box<dyn KnowledgeSource> = Box::new(PublicKnowledge);
     let handler = Arc::new(
         DefaultRequestHandler::new(
             KnowledgeAgent::new(source, auth.clone()),

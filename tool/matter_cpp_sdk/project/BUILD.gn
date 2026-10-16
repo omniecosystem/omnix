@@ -1,0 +1,25 @@
+# Copyright 2026 The Omnix Authors
+# SPDX-License-Identifier: Apache-2.0
+shared_library("omnix_matter") {
+  deps = [
+    "//shim:omnix-matter-cpp",
+    "//third_party/connectedhomeip/src/controller:nodatamodel",
+    "//third_party/connectedhomeip/src/platform/logging:stdio",
+  ]
+  ldflags = [ "-Wl,--no-undefined" ]
+}
+group("default") {
+  deps = [ ":omnix_matter" ]
+}
+
+executable("controller_lifecycle") {
+  sources = [
+    "controller_lifecycle.cpp",
+    "//third_party/connectedhomeip/src/app/server-cluster/testing/EmptyProvider.cpp",
+  ]
+  deps = [
+    "//shim:omnix-matter-cpp",
+    "//third_party/connectedhomeip/src/controller:nodatamodel",
+    "//third_party/connectedhomeip/src/platform/logging:stdio",
+  ]
+}

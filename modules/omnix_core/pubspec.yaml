@@ -1,0 +1,20 @@
+name: omnix_core
+description: Rust-owned on-device inference lifecycle and runtime bindings for Flutter.
+version: 0.1.0-dev.3
+publish_to: none
+environment:
+  sdk: ^3.12.2
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_rust_bridge: ^2.13.0
+  flutter_rust_bridge_hooks: ^2.13.0
+  archive: ^4.0.7
+  code_assets: ^1.2.1
+  crypto: ^3.0.6
+  hooks: ^2.0.2
+  native_toolchain_rust: ^1.0.4
+  path: ^1.9.1
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  test: ^1.26.0

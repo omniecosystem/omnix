@@ -1,0 +1,5 @@
+{
+  "goal": "Read the phone battery and open a share sheet with that saved report",
+  "triggerJson": "{\"source\":\"simulation\",\"kind\":\"tick\",\"match\":{}}",
+  "planJson": "[{\"id\":\"battery\",\"executor\":\"host_battery_status\",\"input\":{}},{\"id\":\"share\",\"executor\":\"host_share_text\",\"input\":{},\"outputBindings\":{\"text\":{\"step\":\"battery\",\"pointer\":\"/report\"}}}]"
+}

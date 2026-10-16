@@ -1,0 +1,22 @@
+[package]
+name = "omnix_knowledge_bridge"
+version = "0.1.0-dev.3"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+[workspace]
+members = ["backend"]
+resolver = "2"
+[features]
+default = []
+qdrant = ["omnix-knowledge/qdrant"]
+[dependencies]
+flutter_rust_bridge = "=2.13.0"
+omnix-knowledge = { path = "backend", default-features = false }
+serde_json = "1"
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1", features = ["rt"] }
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

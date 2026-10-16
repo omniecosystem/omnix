@@ -1,0 +1,88 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
+
+// Build-time qualification resolver, not an Android Flutter plugin or SDK host.
+// Applying this script alone does not enable Matter or download anything.
+ext.omnixResolveMatterSdk = { Map options ->
+    def manifest = new JsonSlurper().parse(options.manifest as File)
+    def verify = { File artifact ->
+        def digest = MessageDigest.getInstance('SHA-256')
+        artifact.withInputStream { input ->
+            byte[] buffer = new byte[64 * 1024]
+            int count
+            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count)
+        }
+        if (digest.digest().encodeHex().toString() != manifest.sha256) {
+            throw new GradleException('Matter SDK checksum mismatch; refusing the artifact.')
+        }
+        artifact
+    }
+    def override = options.override ?: System.getenv('OMNIX_MATTER_ANDROID_AAR')
+    if (override) {
+        def artifact = file(override)
+        if (!artifact.isFile()) throw new GradleException('Explicit Matter SDK AAR does not exist.')
+        return verify(artifact)
+    }
+    def local = options.localAar as File
+    if (local?.isFile()) return verify(local) // Reuse directly; no duplicate copy.
+    def cache = options.cacheDir ?: new File(gradle.gradleUserHomeDir, 'omnix/matter/android-arm64')
+    def cached = new File(cache as File, "${manifest.sha256}.aar")
+    if (cached.isFile()) return verify(cached)
+    def releaseUrl = options.downloadUrl ?: System.getenv('OMNIX_MATTER_ANDROID_URL') ?: manifest.releaseUrl
+    if (!releaseUrl) {
+        throw new GradleException('No published Matter SDK artifact is configured. Stage the pinned source-built AAR or set OMNIX_MATTER_ANDROID_AAR; see doc/MATTER_EXAMPLE.md. No download was attempted.')
+    }
+    def uri = new URI(releaseUrl as String)
+    if (uri.scheme != 'https' || !uri.host || uri.userInfo != null || uri.fragment != null) {
+        throw new GradleException('Matter SDK downloads require an HTTPS URL without embedded credentials.')
+    }
+    Files.createDirectories(cached.parentFile.toPath())
+    def lock = FileChannel.open(new File(cached.parentFile, 'download.lock').toPath(),
+        StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+    def held = null
+    def temporary = null
+    try {
+        held = lock.tryLock()
+        if (held == null) throw new GradleException('Another Matter SDK download is active; retry this build.')
+        if (cached.isFile()) return verify(cached)
+        temporary = Files.createTempFile(cached.parentFile.toPath(), 'matter-', '.part')
+        def connection = uri.toURL().openConnection() as javax.net.ssl.HttpsURLConnection
+        connection.instanceFollowRedirects = false // Never forward to another origin.
+        connection.connectTimeout = 20000
+        connection.readTimeout = 60000
+        try {
+            if (connection.responseCode != 200) throw new GradleException('Matter SDK download did not return HTTP 200. Use a direct artifact URL.')
+            long size = 0
+            long deadline = System.nanoTime() + 600_000_000_000L
+            connection.inputStream.withCloseable { input ->
+                Files.newOutputStream(temporary).withCloseable { output ->
+                    byte[] buffer = new byte[64 * 1024]
+                    int count
+                    while ((count = input.read(buffer)) != -1) {
+                        size += count
+                        if (size > 64 * 1024 * 1024 || System.nanoTime() > deadline) {
+                            throw new GradleException('Matter SDK download exceeded its size/time limit.')
+                        }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
+        } finally { connection.disconnect() }
+        verify(temporary.toFile())
+        Files.move(temporary, cached.toPath(), StandardCopyOption.ATOMIC_MOVE)
+        temporary = null
+        return cached
+    } finally {
+        if (temporary != null) Files.deleteIfExists(temporary)
+        held?.release()
+        lock.close()
+    }
+}
+
+ext.omnixMatterRuntimeDependencies = { File manifest ->
+    new JsonSlurper().parse(manifest).runtimeDependencies
+}

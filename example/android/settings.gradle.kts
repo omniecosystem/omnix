@@ -19,8 +19,7 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // flutter_gemma_agent currently includes an Android dependency whose
-    // published Gradle script is not yet compatible with AGP 9.
+    // Pin the Android toolchain used by the example application.
     id("com.android.application") version "8.11.1" apply false
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
 }

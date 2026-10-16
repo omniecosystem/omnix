@@ -1,194 +1,160 @@
 # Omnix
 
-Omnix is an open, headless, on-device intelligence engine for Flutter
-applications.
+Omnix is a modular, Rust-first Cognitive System for applications, services and
+devices. Compose local inference, agent capabilities, knowledge retrieval,
+persistent storage, workflows and connectivity through one API, or use the
+modules independently.
 
-The project starts with a stable Dart API and a Rust core connected through
-`flutter_rust_bridge`. Proven Dart implementations can be adopted
-incrementally, while performance-sensitive and security-sensitive operations
-move to Rust without changing the public Dart contract.
+Rust implements execution and orchestration. Dart APIs expose that implementation
+through Flutter Rust Bridge. Your host supplies the interface, media capture,
+operating-system permissions and platform services.
 
-## Principles
+## Choose your integration
 
-- Local-first and private by default.
-- Headless engine APIs, independent of any product interface.
-- Stable handwritten contracts; generated bridge code remains internal.
-- Explicit capability boundaries for inference, tools, skills, and workflows.
-- Behavioral parity tests before replacing Dart implementations with Rust.
-- Incremental adoption without requiring a big-bang application rewrite.
+| Integration | Use it when |
+| --- | --- |
+| Root Omnix | You want sessions, agents and selected modules coordinated through one system API. |
+| Independent Rust crates | You want to compose capabilities directly without Dart or Flutter. |
+| Module Dart packages | You want a focused capability in a Flutter application. |
 
-## Structure
+The root Dart package is headless. The current Core, Storage, Knowledge and Nexus
+Dart packages require the Flutter SDK for their bindings and build integration.
+Workflow is available as an independent Rust crate and through root Omnix's Dart
+API; a separate Workflow Dart package is not yet available.
 
-- `lib/src/domain`: implementation-independent models and contracts.
-- `lib/src/application`: engine composition and use cases.
-- `lib/src/infrastructure`: Dart, platform, and Rust adapters.
-- `lib/src/rust`: generated bridge code. Do not edit manually.
-- `rust`: the native Omnix crate.
-- `hook`: Native Assets build integration.
-- `example`: a minimal host application.
-- `doc`: architecture and extraction decisions.
-- `website`: the independently deployed developer portal (excluded from the
-  pub.dev package archive).
+## Modules
 
-See [platform support](doc/PLATFORMS.md) for the verification tiers. Omnix is
-architected for every Flutter target while Android and Windows receive initial
-integration priority.
+| Module | Responsibilities | Selectable components |
+| --- | --- | --- |
+| [Core](modules/omnix_core/README.md) | Model execution, streaming, cancellation, embeddings and model installation | LiteRT-LM, llama.cpp |
+| [Storage](modules/omnix_storage/README.md) | Conversation snapshots, workflow checkpoints and vector persistence | SQLite, Qdrant Edge |
+| [Knowledge](modules/omnix_knowledge/README.md) | Profile-bound indexing, retrieval and source attribution | Optional Qdrant and Core adapters |
+| [Workflow](modules/omnix_workflow/README.md) | Sequential execution, saved results, recovery and cancellation | Host-supplied journals and executors |
+| [Nexus](modules/omnix_nexus/README.md) | Authenticated A2A exchanges and experimental Matter integrations | A2A, Matter adapters |
 
-See [module boundaries](doc/MODULES.md) for how Core, Workflow, Knowledge,
-Nexus, skills, and tools map to reusable engine capabilities without mirroring
-application screens one-for-one.
+The optional agent capability belongs to root Omnix. Supply tool definitions,
+skill instructions, execution callbacks and access policies appropriate to your
+application. Core runs the model; Workflow persists jobs; Knowledge supplies
+retrieval; Nexus connects permitted remote capabilities.
 
-The experimental native Nexus A2A integration is bundled in this package's
-Rust sources; it no longer depends on a sibling `omnixus` checkout. The API supports
-local identity, public-Knowledge peer grants, outgoing queries, and a loopback
-listener that calls the host's `OmnixKnowledgeCoordinator` after peer verification.
-It is a public-data experiment, not production pairing or remote-action authority.
-See [Nexus A2A demo](doc/NEXUS_A2A_DEMO.md) for the Rust test and example commands.
+## Source layout
 
-An app can use `OmnixNexusNode` with a host-chosen private directory to read
-its public key, grant a peer, or query that peer's public Knowledge:
-
-```dart
-final node = OmnixNexusNode(nodeDirectory: privateNodeDirectory);
-final reply = await node.queryPublicKnowledge(
-  'https://peer.example',
-  'What is Omnixus?',
-);
-print(reply.texts);
+```text
+lib/                            Root Dart API and generated bridge bindings
+rust/                           Root Rust composition and bridge
+modules/
+  omnix_core/
+  omnix_storage/
+  omnix_knowledge/
+  omnix_workflow/
+  omnix_nexus/
+example/                        Flutter application composing the modules
+hook/                           Root native build integration
+website/                        Developer website, deployed separately
 ```
 
-To receive queries, a host can start a listener using its Knowledge coordinator:
+Core, Storage, Knowledge and Nexus use this layout:
 
-```dart
-final listener = await node.startPublicKnowledgeListener(
-  advertisedOrigin: 'https://this-node.example',
-  knowledge: coordinator,
-  port: 46138,
-);
-// Stop it when the host no longer wants to serve requests.
-await listener.stop();
+```text
+modules/omnix_core/
+  lib/                          Dart API
+  hook/                         Native build configuration
+  example/                      Standalone Flutter example
+  rust/
+    src/                        Flutter Rust Bridge adapter
+    backend/
+      src/                      Independent Rust implementation
+      Cargo.toml                Backend crate manifest
 ```
 
-The listener binds to `127.0.0.1` and only returns public chunks. The host
-must provide HTTPS reachability and an explicit pairing UX. Tailscale Serve is
-one possible private HTTPS proxy, not an Omnix or Omnixus dependency. No
-listener is started automatically by Omnix or OmniAsk. Run the local native
-round trip in `example/bin/nexus_loopback.dart` after building the Rust DLL;
-the example README has commands.
+Workflow currently contains its independent Rust crate under `rust/backend`,
+with integration exposed by root Omnix.
 
-## Quick start
+## Start a Dart conversation
+
+Use a compatible local model and include its runtime in the application's native
+build configuration. Neither inference runtime is included implicitly.
+
+```yaml
+hooks:
+  user_defines:
+    omnix:
+      windows:
+        runtimes: [litertlm]
+```
+
+The following example takes an absolute model path as its first argument:
 
 ```dart
 import 'package:omnix/omnix.dart';
-import 'package:omnix/omnix_flutter_gemma.dart';
 
-final runtime = FlutterGemmaOmnix.createRuntime();
-await runtime.initialize();
-
-await runtime.models.install(
-  OmnixModelInstallRequest(
-    template: OmnixModelTemplate.gemma4,
-    format: OmnixModelFormat.liteRtLm,
-    source: OmnixNetworkModelSource(modelUri),
-  ),
-  onProgress: (progress) => print('$progress%'),
-);
-
-final conversation = await runtime.openConversation(
-  const OmnixConversationConfiguration(
-    modelTemplate: OmnixModelTemplate.gemma4,
-  ),
-);
-try {
-  await for (final event in conversation.send('Hello')) {
-    if (event case OmnixTextDelta(:final text)) print(text);
+Future<void> main(List<String> arguments) async {
+  if (arguments.length != 1) {
+    throw ArgumentError('Supply an absolute path to a compatible model.');
   }
-} finally {
-  await runtime.close();
+
+  final engine = await OmnixCognitiveEngine.open(runtimes: ['litertlm']);
+  try {
+    final session = await engine.startSession(
+      modelPath: arguments.single,
+      instructions: 'Reply briefly.',
+    );
+    try {
+      await for (final delta in session.sendStream('Hello')) {
+        print(delta);
+      }
+    } finally {
+      await session.close();
+    }
+  } finally {
+    await engine.close();
+  }
 }
 ```
 
-See [model management](doc/MODELS.md) for sources, integrity verification,
-cancellation, capability discovery, Android foreground downloads, and lifecycle
-behavior.
+Build-time inclusion and runtime selection are separate: selecting a runtime in
+Dart cannot add a backend omitted from the native build. Model and native-library
+paths must refer to trusted artifacts. Model licensing and device compatibility
+depend on the selected model and runtime.
 
-See [audio and speech](doc/SPEECH.md) for the distinction between direct model
-audio, speech-to-text, text-to-speech, and optional provider adapters.
+## Platforms and packaging
 
-See [persistence boundaries](doc/PERSISTENCE.md) for the distinction between
-active session history, durable relational storage, vector indexes, and the
-coordinator that atomically persists complete turns.
+Android ARM64 LiteRT-LM integration powers OmniAsk, including compatible Gemma
+image/audio input and tools. Android packaging requires API 31 or later and
+extracted native libraries. Both direct APK packaging and bundle-generated APKs
+must preserve that extraction setting.
 
-See [context management](doc/CONTEXT.md) for token budgeting, recent-history
-selection, pending-input reservation, and the separation between active model
-context and complete durable history.
+Windows native integrations include LiteRT-LM and llama.cpp. CPU/GPU availability
+depends on the adapter, model and device; NPU support is experimental. Other
+targets are not currently supported as complete end-to-end integrations.
 
-Each runtime also owns one provider-neutral capability registry:
+Rust and platform compiler tools are build prerequisites. CMake and a C++ compiler
+are needed for llama.cpp source builds. Native assets are selected by build hooks;
+their manifests document artifact pins, checksums and licensing requirements.
+Some Android profiles currently require a separately built pinned archive.
 
-```dart
-runtime.capabilities.register(
-  OmnixTool(
-    metadata: OmnixCapabilityMetadata(
-      id: 'current_time',
-      kind: OmnixCapabilityKind.tool,
-      name: 'Current time',
-      description: 'Returns the device-local time.',
-    ),
-    execute: (_) => OmnixToolSuccess(DateTime.now().toIso8601String()),
-  ),
-);
+## Development status
+
+The APIs and storage formats are a developer preview. Cargo and pub publication
+are disabled for the extracted packages; integrate from a source checkout.
+OmniAsk uses Omnix, but applications should verify their own models, target
+platforms and lifecycle requirements before deployment.
+
+To work on the root Dart package:
+
+```sh
+dart pub get
+dart analyze lib test hook
+dart test
 ```
 
-See [skills and tools](doc/CAPABILITIES.md) for capability definitions,
-enablement, permission policy, and structured execution results.
+Native integration tests may require explicit runtime and model paths. Tests
+without those inputs can be skipped; a skipped native test is not execution
+coverage.
 
-An optional agent backend can open headless agent sessions over the same
-runtime-owned capability state. See [agent sessions](doc/AGENTS.md) for the
-neutral event contract, Flutter Gemma Agent adapter, and scheduling boundary.
+After changing bridge declarations, regenerate bindings with
+`flutter_rust_bridge_codegen generate` using version `2.13.0`. Applications
+consuming the existing bindings do not need to run the generator.
 
-The Workflow runtime adds durable task transitions, append-only progress
-events, cooperative cancellation, retry fairness, and interrupted-task
-recovery over a host-provided atomic store. See
-[workflow runtime](doc/WORKFLOWS.md) for the contracts and composition example.
-Conversations, agent sessions, and Workflow runtimes opened through
-`OmnixRuntime` automatically use its single inference scheduler.
-Applications that already coordinate other model workloads may supply their
-own `InferenceScheduler`; the application retains responsibility for closing
-an injected scheduler.
-
-## Development
-
-Install Flutter and Rust with `rustup`, then install the matching bridge
-generator. Omnix currently compiles its Rust crate as a Native Asset, so
-`rustup` and `cargo` must be visible to the process that launches Flutter.
-
-```shell
-rustup --version
-cargo --version
-cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
-flutter pub get
-```
-
-On Windows, `rustup` normally adds `%USERPROFILE%\.cargo\bin` to the user
-`PATH`. Restart open terminals and IDEs after installing Rust so Flutter sees
-the updated environment. If an older terminal reports `Failed to invoke
-rustup`, open a new one and verify `rustup --version` before rebuilding.
-
-After changing an API under `rust/src/api`, regenerate bindings:
-
-```shell
-flutter_rust_bridge_codegen generate
-```
-
-Validate the package:
-
-```shell
-dart format --output=none --set-exit-if-changed .
-flutter analyze
-flutter test
-cargo fmt --manifest-path rust/Cargo.toml --all -- --check
-cargo clippy --manifest-path rust/Cargo.toml --all-targets -- -D warnings
-```
-
-Native bridge execution is covered by the example integration test and requires
-a Flutter target device.
+Omnix is licensed under Apache-2.0. Bundled runtimes and other third-party
+components retain their own licenses and redistribution requirements.

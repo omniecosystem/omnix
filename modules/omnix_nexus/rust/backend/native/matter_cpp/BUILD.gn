@@ -1,0 +1,13 @@
+# Copyright 2026 The Omnix Authors
+# SPDX-License-Identifier: Apache-2.0
+import("//build_overrides/chip.gni")
+import("//build_overrides/build.gni")
+
+# Incorporate into an SDK host build. This is not a standalone SDK build system.
+source_set("omnix-matter-cpp") {
+  sources = [ "controller.cpp", "omnix_matter.h" ]
+  include_dirs = [ "${chip_root}/zzz_generated/app-common" ]
+  configs -= [ "${build_root}/config/compiler:exceptions_default" ]
+  configs += [ "${build_root}/config/compiler:exceptions" ]
+  public_deps = [ "${chip_root}/src/controller:controller" ]
+}

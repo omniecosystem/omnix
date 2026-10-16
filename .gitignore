@@ -29,7 +29,19 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 /build/
 /coverage/
+/tool/results/
+/tool/matter_android_sdk/resolver_test/build/
+/tool/matter_android_sdk/resolver_test/.gradle/
+.local-native/
+.local-tools/
 /rust/target/
+
+# Generated output from independent module backends.
+/modules/**/target/
+
+# Private project direction is not part of the source distribution.
+/OMNIX_VISION.md
+/OMNI_VISION.md
 
 # Example app machine-local and generated platform state
 /example/.dart_tool/

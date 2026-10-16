@@ -1,0 +1,5 @@
+{
+  "goal": "Read the UTC clock twice on a simulated tick",
+  "triggerJson": "{\"source\":\"simulation\",\"kind\":\"tick\",\"match\":{}}",
+  "planJson": "[{\"id\":\"first\",\"executor\":\"host_time\",\"input\":{}},{\"id\":\"second\",\"executor\":\"host_time\",\"input\":{}}]"
+}

@@ -2,34 +2,78 @@
 name = "omnix"
 version = "0.1.0-dev.3"
 edition = "2021"
+description = "Opt-in composition of inference, agents, knowledge, storage, networking and workflows."
+license = "Apache-2.0"
+publish = false
 
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+[workspace]
+members = []
+resolver = "2"
+
+[features]
+default = []
+core = ["dep:omnix-core", "omnix-core/history"]
+core-litertlm = ["core", "omnix-core/litertlm"]
+core-llamacpp = ["core", "omnix-core/llamacpp"]
+agent = ["core", "omnix-core/tools", "dep:serde_json"]
+knowledge = ["dep:omnix-knowledge"]
+workflow = ["dep:omnix-workflow"]
+workflow-local = ["workflow", "storage-rusqlite", "agent"]
+knowledge-local = ["core-litertlm", "knowledge", "omnix-knowledge/qdrant", "omnix-knowledge/core-litertlm-embedding-engine"]
+nexus = ["nexus-a2a"] # Compatibility alias for the existing aggregate API.
+nexus-a2a = ["dep:omnix-nexus", "omnix-nexus/a2a"]
+nexus-matter-experimental = ["dep:omnix-nexus", "omnix-nexus/experimental-matter"]
+nexus-matter = ["nexus-matter-experimental"]
+storage = ["storage-rusqlite"] # Compatibility alias for conversation storage.
+storage-rusqlite = ["dep:omnix-storage", "omnix-storage/rusqlite"]
+storage-sqlite = ["storage-rusqlite"]
+storage-qdrant = ["dep:omnix-storage", "omnix-storage/qdrant"]
+# Transitional root binding; native module handles belong to module bindings.
+flutter-bridge = ["dep:flutter_rust_bridge", "dep:serde_json"]
+experimental-matter = ["nexus", "omnix-nexus/experimental-matter"]
+
 [dependencies]
-flutter_rust_bridge = "=2.13.0"
+flutter_rust_bridge = { version = "=2.13.0", optional = true }
+serde_json = { version = "1", optional = true }
+omnix-core = { path = "../modules/omnix_core/rust/backend", optional = true }
+omnix-nexus = { path = "../modules/omnix_nexus/rust/backend", optional = true }
+omnix-knowledge = { path = "../modules/omnix_knowledge/rust/backend", optional = true }
+omnix-workflow = { path = "../modules/omnix_workflow/rust/backend", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1", features = ["net", "rt", "sync", "time"] }
+omnix-storage = { path = "../modules/omnix_storage/rust/backend", optional = true }
+
+[dev-dependencies]
 futures = "0.3"
 axum = "0.8"
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+uuid = { version = "1", features = ["v4"] }
 a2a = { package = "a2a-lf", version = "=0.3.1" }
 a2a-server = { package = "a2a-server-lf", version = "=0.4.4", default-features = false }
 a2a-client = { package = "a2a-client-lf", version = "=0.2.5" }
-hex = "0.4"
-subtle = "2"
-base64 = "0.22"
-ed25519-dalek = "2"
-rand = "0.8"
-serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
 url = "2"
 
-[dev-dependencies]
-tempfile = "3"
-tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
-uuid = { version = "1", features = ["v4"] }
+[[example]]
+name = "two_agents"
+required-features = ["nexus"]
+
+[[example]]
+name = "agent_knowledge"
+required-features = ["agent", "core-litertlm"]
+
+[[example]]
+name = "tool_reliability"
+required-features = ["agent", "core-litertlm"]
+
+[[test]]
+name = "a2a_http_loopback"
+required-features = ["nexus"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

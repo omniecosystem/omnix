@@ -6,8 +6,13 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
-import 'api/nexus.dart';
+import 'api/agent.dart';
+import 'api/agent_extensions.dart';
+import 'api/input.dart';
+import 'api/interaction.dart';
 import 'api/simple.dart';
+import 'api/tasks.dart';
+import 'api/workflow.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -25,16 +30,38 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   AnyhowException dco_decode_AnyhowException(dynamic raw);
 
   @protected
-  FutureOr<String> Function(String, String)
-  dco_decode_DartFn_Inputs_String_String_Output_String_AnyhowException(
-    dynamic raw,
-  );
+  FutureOr<String> Function(String)
+  dco_decode_DartFn_Inputs_String_Output_String_AnyhowException(dynamic raw);
 
   @protected
   Object dco_decode_DartOpaque(dynamic raw);
 
   @protected
+  RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw);
+
+  @protected
   String dco_decode_String(dynamic raw);
+
+  @protected
+  bool dco_decode_bool(dynamic raw);
+
+  @protected
+  bool dco_decode_box_autoadd_bool(dynamic raw);
+
+  @protected
+  BigInt dco_decode_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  double dco_decode_f_32(dynamic raw);
+
+  @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
+  InteractionInputKind dco_decode_interaction_input_kind(dynamic raw);
+
+  @protected
+  InteractionInputPart dco_decode_interaction_input_part(dynamic raw);
 
   @protected
   PlatformInt64 dco_decode_isize(dynamic raw);
@@ -43,19 +70,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<InteractionInputPart> dco_decode_list_interaction_input_part(
+    dynamic raw,
+  );
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
-
-  @protected
-  NexusKnowledgeReply dco_decode_nexus_knowledge_reply(dynamic raw);
-
-  @protected
-  NexusListenerInfo dco_decode_nexus_listener_info(dynamic raw);
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
-  int dco_decode_u_16(dynamic raw);
+  bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
+  BigInt? dco_decode_opt_box_autoadd_u_64(dynamic raw);
+
+  @protected
+  int dco_decode_u_32(dynamic raw);
 
   @protected
   BigInt dco_decode_u_64(dynamic raw);
@@ -76,7 +108,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Object sse_decode_DartOpaque(SseDeserializer deserializer);
 
   @protected
+  RustStreamSink<String> sse_decode_StreamSink_String_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer);
+
+  @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  BigInt sse_decode_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_32(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  InteractionInputKind sse_decode_interaction_input_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  InteractionInputPart sse_decode_interaction_input_part(
+    SseDeserializer deserializer,
+  );
 
   @protected
   PlatformInt64 sse_decode_isize(SseDeserializer deserializer);
@@ -85,23 +147,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<InteractionInputPart> sse_decode_list_interaction_input_part(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
-
-  @protected
-  NexusKnowledgeReply sse_decode_nexus_knowledge_reply(
-    SseDeserializer deserializer,
-  );
-
-  @protected
-  NexusListenerInfo sse_decode_nexus_listener_info(
-    SseDeserializer deserializer,
-  );
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_u_16(SseDeserializer deserializer);
+  bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  BigInt? sse_decode_opt_box_autoadd_u_64(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer);
 
   @protected
   BigInt sse_decode_u_64(SseDeserializer deserializer);
@@ -116,20 +179,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BigInt sse_decode_usize(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
-
-  @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
     SseSerializer serializer,
   );
 
   @protected
-  void sse_encode_DartFn_Inputs_String_String_Output_String_AnyhowException(
-    FutureOr<String> Function(String, String) self,
+  void sse_encode_DartFn_Inputs_String_Output_String_AnyhowException(
+    FutureOr<String> Function(String) self,
     SseSerializer serializer,
   );
 
@@ -137,7 +194,40 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_DartOpaque(Object self, SseSerializer serializer);
 
   @protected
+  void sse_encode_StreamSink_String_Sse(
+    RustStreamSink<String> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_u_64(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_32(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_interaction_input_kind(
+    InteractionInputKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_interaction_input_part(
+    InteractionInputPart self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_isize(PlatformInt64 self, SseSerializer serializer);
@@ -146,20 +236,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_interaction_input_part(
+    List<InteractionInputPart> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_nexus_knowledge_reply(
-    NexusKnowledgeReply self,
-    SseSerializer serializer,
-  );
-
-  @protected
-  void sse_encode_nexus_listener_info(
-    NexusListenerInfo self,
     SseSerializer serializer,
   );
 
@@ -167,7 +251,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
-  void sse_encode_u_16(int self, SseSerializer serializer);
+  void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_64(BigInt? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_64(BigInt self, SseSerializer serializer);
@@ -180,12 +270,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
 }
 
 // Section: wire_class

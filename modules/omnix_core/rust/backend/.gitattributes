@@ -1,0 +1,3 @@
+# Preserve upstream bytes and pinned header digests across host line endings.
+/vendor/** -text
+/src/*_bindings.rs text eol=lf
