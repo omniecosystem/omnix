@@ -171,10 +171,19 @@ impl LiteRtLmProvider {
     /// Loads the pinned distribution installed by Cargo or the Flutter build hook.
     /// The deployment must preserve the DLLs beside the executable/Core library.
     pub fn from_bundled(context_tokens: u32) -> Result<Self, CoreError> {
+        Self::from_bundled_with_modalities(context_tokens, [InputModality::Text].into())
+    }
+
+    /// Load the same verified runtime with the requested media encoders.
+    pub fn from_bundled_with_modalities(
+        context_tokens: u32,
+        modalities: std::collections::BTreeSet<InputModality>,
+    ) -> Result<Self, CoreError> {
         let path = Self::bundled_library_path()?;
         // Build-time acquisition verifies the pinned C-ABI distribution.
-        unsafe { Self::from_library(&path, context_tokens) }
+        unsafe { Self::from_library_with_modalities(&path, context_tokens, modalities) }
     }
+
 
     /// Load an explicitly selected trusted native runtime, without downloading.
     ///

@@ -1,0 +1,13 @@
+[package]
+name = "omnix-core-c"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "omnix_core_c"
+crate-type = ["cdylib"]
+
+[dependencies]
+omnix-core = { path = "../rust/backend", default-features = false, features = ["litertlm"] }

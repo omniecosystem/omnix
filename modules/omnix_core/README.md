@@ -9,6 +9,9 @@ The backend crate is in `rust/backend`; `rust` contains the separate native
 bridge. The current Dart package requires the Flutter SDK and builds its bridge
 through Native Assets.
 
+Native C and C++ hosts can use the [Core C API preview](c-api/README.md) from a
+source checkout. It builds against the independent Rust backend with Cargo.
+
 ## Select runtimes
 
 Neither runtime is included by default. Select at least one in the consuming
