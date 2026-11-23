@@ -22,6 +22,33 @@ conversation opening and sending off the UI thread. The send drains native work
 before returning. Close the conversation and free the cancellation handle only
 after the send returns, then close the model when it is no longer needed.
 
-Windows x64 CPU is the first exercised C host configuration. The ABI is a
-preview and currently covers streamed conversation turns. Apple packaging and
-tool conversations through this C surface remain to be qualified.
+## macOS
+
+On Apple silicon with Rust and the Xcode command-line tools installed, run:
+
+```sh
+bash modules/omnix_core/c-api/build-macos.sh
+```
+
+The build verifies the pinned LiteRT-LM 0.18.0 archive and checks its exported
+symbols. It builds the Rust library and a plain Swift client, then stages
+both dylibs beside the executable in `modules/omnix_core/c-api/target/macos`.
+The build also runs a linkage check through the Swift client.
+
+Use a trusted, vision-capable local model to try an image question and a
+follow-up on the same session:
+
+```sh
+modules/omnix_core/c-api/target/macos/omnix-core-smoke \
+  /absolute/path/to/model.litertlm overview.png crop.png \
+  "What is in these images?" "What color was it?"
+```
+
+A Swift app can import `OmnixCoreC` from `include/module.modulemap` and link
+the Omnix dylib. Bundle both dylibs together in the app's Frameworks directory
+and sign them with the app's signing identity. Model files stay in app-owned
+storage or at a host-approved path.
+
+The C ABI is a preview for streamed conversation turns. This build targets
+Apple silicon CPU. Intel macOS, iOS, and tool conversations through this C
+surface remain outside this preview.

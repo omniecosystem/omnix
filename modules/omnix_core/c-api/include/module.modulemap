@@ -1,0 +1,4 @@
+module OmnixCoreC {
+    header "omnix_core.h"
+    export *
+}

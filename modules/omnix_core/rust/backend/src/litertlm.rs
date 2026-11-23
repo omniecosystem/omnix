@@ -190,7 +190,7 @@ impl LiteRtLmProvider {
     /// # Safety
     /// The caller must verify this library and its dependencies are trusted and
     /// implement the pinned platform's compatible LiteRT-LM C ABI (v0.17.1 on
-    /// Windows, v0.18.0 on Android). Loading arbitrary or ABI-incompatible
+    /// Windows, v0.18.0 on Android and macOS). Loading arbitrary or ABI-incompatible
     /// native code can execute malicious code or cause undefined behavior.
     pub unsafe fn from_library(path: &Path, context_tokens: u32) -> Result<Self, CoreError> {
         Self::from_library_with_modalities(path, context_tokens, [InputModality::Text].into())
@@ -371,6 +371,8 @@ fn current_platform() -> Result<TargetPlatform, CoreError> {
         Ok(TargetPlatform::Windows)
     } else if cfg!(target_os = "android") {
         Ok(TargetPlatform::Android)
+    } else if cfg!(target_os = "macos") {
+        Ok(TargetPlatform::Macos)
     } else {
         Err(CoreError::NoCompatibleProvider)
     }

@@ -36,7 +36,7 @@ reqwest = { version = "0.13.5", default-features = false, features = ["blocking"
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_System_LibraryLoader"], optional = true }
 
-[target.'cfg(target_os = "android")'.dependencies]
+[target.'cfg(any(target_os = "android", target_os = "macos"))'.dependencies]
 libc = "0.2"
 
 [[example]]

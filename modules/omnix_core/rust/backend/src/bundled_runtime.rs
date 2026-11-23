@@ -41,7 +41,7 @@ pub(crate) fn litertlm_path() -> Result<String, String> {
             .into_string()
             .map_err(|_| "Runtime path is not UTF-8".into())
     }
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "android", target_os = "macos"))]
     {
         let mut info: libc::Dl_info = unsafe { std::mem::zeroed() };
         // Find this loaded bridge, not the working directory or a global PATH.
@@ -55,26 +55,41 @@ pub(crate) fn litertlm_path() -> Result<String, String> {
             .map_err(|_| "Core bridge path is not UTF-8")?;
         let bridge = std::path::Path::new(bridge);
         if !bridge.is_absolute() || !bridge.is_file() {
+            #[cfg(target_os = "android")]
             return Err("Android Core requires android:extractNativeLibs=\"true\"".into());
+            #[cfg(target_os = "macos")]
+            return Err("Cannot locate the loaded Omnix Core library on macOS".into());
         }
+        #[cfg(target_os = "android")]
+        let library_name =
+            option_env!("OMNIX_CORE_LITERTLM_ANDROID_LIBRARY").unwrap_or("liblitert-lm.so");
+        #[cfg(target_os = "macos")]
+        let library_name = "libCLiteRTLM_mac.dylib";
         let path = bridge
             .parent()
             .ok_or("Core bridge has no directory")?
-            .join(option_env!("OMNIX_CORE_LITERTLM_ANDROID_LIBRARY").unwrap_or("liblitert-lm.so"));
+            .join(library_name);
         if !path.is_file() {
-            return Err("Pinned Android LiteRT-LM is missing beside Core".into());
+            return Err(format!(
+                "Pinned LiteRT-LM is missing beside Core: {library_name}"
+            ));
         }
         Ok(path.to_string_lossy().into_owned())
     }
-    #[cfg(not(any(windows, target_os = "android")))]
-    Err("Automatic LiteRT-LM loading is supported only on Windows x64 and Android".into())
+    #[cfg(not(any(windows, target_os = "android", target_os = "macos")))]
+    Err("Automatic LiteRT-LM loading is supported only on Windows x64, Android and macOS".into())
 }
 
 #[cfg(feature = "litertlm-embedding-engine")]
 pub(crate) fn embedding_path() -> Result<std::path::PathBuf, String> {
-    let chat = std::path::PathBuf::from(litertlm_path()?);
-    #[cfg(windows)]
-    return Ok(chat.with_file_name("litert-lm.dll"));
-    #[cfg(not(windows))]
-    Ok(chat)
+    #[cfg(target_os = "macos")]
+    return Err("Bundled LiteRT-LM embedding inference is not enabled on macOS".into());
+    #[cfg(not(target_os = "macos"))]
+    {
+        let chat = std::path::PathBuf::from(litertlm_path()?);
+        #[cfg(windows)]
+        return Ok(chat.with_file_name("litert-lm.dll"));
+        #[cfg(not(windows))]
+        Ok(chat)
+    }
 }

@@ -1,0 +1,70 @@
+name: Core macOS preview
+
+on:
+  push:
+    branches: [feat/core-macos]
+    paths:
+      - '.github/workflows/core-macos.yml'
+      - 'modules/omnix_core/c-api/**'
+      - 'modules/omnix_core/rust/backend/**'
+  workflow_dispatch:
+    inputs:
+      real_model:
+        description: Run a two-image Gemma turn and follow-up
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  swift:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
+      - name: Build and check native Swift linkage
+        run: bash modules/omnix_core/c-api/build-macos.sh "$RUNNER_TEMP/omnix-core"
+      - name: Run Gemma with two synthetic images and a follow-up
+        if: github.event_name == 'push' || inputs.real_model
+        working-directory: ${{ runner.temp }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 3 \
+            'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/b3ca0d2f076785a8f4b2219ddbd2bdb99954eae1/gemma-4-E2B-it.litertlm' \
+            --output model.litertlm
+          printf '%s  %s\n' 181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c model.litertlm | shasum -a 256 --check
+          python3 - <<'PY'
+          import struct
+          import zlib
+          from pathlib import Path
+
+          def chunk(name, data):
+              message = name + data
+              return struct.pack(">I", len(data)) + message + struct.pack(">I", zlib.crc32(message))
+
+          def image(path, width, height):
+              pixels = bytearray()
+              for y in range(height):
+                  pixels.append(0)
+                  for x in range(width):
+                      blue = width // 4 <= x < 3 * width // 4 and height // 4 <= y < 3 * height // 4
+                      pixels.extend((0, 0, 238) if blue else (238, 238, 238))
+              header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+              Path(path).write_bytes(
+                  b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
+                  + chunk(b"IDAT", zlib.compress(pixels)) + chunk(b"IEND", b"")
+              )
+
+          image("overview.png", 384, 256)
+          image("crop.png", 256, 256)
+          PY
+          ./omnix-core/omnix-core-smoke "$RUNNER_TEMP/model.litertlm" overview.png crop.png \
+            "What color is the shape? Give only the color." \
+            "What shape was that? Give only the shape." | tee answers.txt
+          sed -n '1p' answers.txt | grep -qi blue
+          sed -n '2p' answers.txt | grep -Eqi 'square|rectangle'
